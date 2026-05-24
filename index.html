@@ -372,6 +372,27 @@
       <div class="done-time-label">あなたの記録タイム</div>
       <div class="done-time" id="done-time-display">00:00</div>
       <div class="done-handle" id="done-handle-disp"></div>
+
+      <!-- おたよりらん -->
+      <div style="margin-top:24px;text-align:left;border-top:1px solid #e0ddd5;padding-top:20px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px">📝 おたより（任意）</div>
+        <div style="font-size:12px;color:#888;margin-bottom:8px">どうやって解いた？ヒントは？ひとことどうぞ</div>
+        <textarea id="otayori-input" placeholder="写真1はあの建物が見えたのでわかりました…など"
+          style="width:100%;padding:10px 12px;font-size:14px;border:1.5px solid #ddd;border-radius:10px;background:#f7f6f2;color:#1a1a1a;outline:none;resize:vertical;min-height:80px;line-height:1.6;font-family:inherit;transition:border-color 0.15s"
+          onfocus="this.style.borderColor='#1D9E75'" onblur="this.style.borderColor='#ddd'"></textarea>
+
+        <div style="font-size:13px;font-weight:700;margin-top:14px;margin-bottom:6px">📧 メールアドレス（任意）</div>
+        <div style="font-size:12px;color:#888;margin-bottom:8px">入力すると回答内容をメールで受け取れるよ</div>
+        <input type="email" id="email-input" placeholder="your@email.com"
+          style="width:100%;padding:10px 12px;font-size:14px;border:1.5px solid #ddd;border-radius:10px;background:#f7f6f2;color:#1a1a1a;outline:none;font-family:inherit;transition:border-color 0.15s;margin-bottom:10px"
+          onfocus="this.style.borderColor='#1D9E75'" onblur="this.style.borderColor='#ddd'">
+
+        <button onclick="sendOtayori()"
+          style="width:100%;padding:11px;font-size:14px;font-weight:700;background:#1D9E75;color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:inherit"
+          id="otayori-btn">おたよりを送る</button>
+        <div id="otayori-result" style="font-size:12px;text-align:center;margin-top:8px;min-height:16px"></div>
+      </div>
+
       <div class="done-note">
         1週間後に正解発表！<br>
         結果はホームページで公開されます。<br>
@@ -381,11 +402,11 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 0.8</div>
+<div class="ver-badge">ver 1.0</div>
 
 <script>
   // ======================== Apps Script URL ========================
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxSHd68AKRiQGCDnHxPyjxcUMjVqUSAH4xeoX3QZxuf2yFUwoTjyCDmO_zdhmhL9IFK/exec';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDAvaU5vh_Cf7VvGqq8MuFAQGINEQeXBdfwnW-C5D2XEQF2jJVcSHhyFeyQTdQ2jvD/exec';
 
   // ======================== 状たい ========================
   const STATE_KEY = 'kokodoko_state';
@@ -676,6 +697,52 @@
       };
       document.querySelector('.done-note').after(btn);
     }
+  }
+
+  // ======================== おたより送信 ========================
+  function sendOtayori() {
+    const otayori = document.getElementById('otayori-input').value.trim();
+    const email = document.getElementById('email-input').value.trim();
+    const btn = document.getElementById('otayori-btn');
+    const result = document.getElementById('otayori-result');
+
+    btn.disabled = true;
+    btn.textContent = '送信中…';
+
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'submitOtayori',
+        roomId: state.roomId,
+        handle: state.handle,
+        otayori,
+        email,
+        answers: [0,1,2].map(i => {
+          const el = document.getElementById('ans-' + i);
+          return el ? el.value.trim() : '';
+        }),
+        elapsed: state.elapsedAtSubmit || 0
+      })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          btn.textContent = '送信ずみ ✅';
+          result.style.color = '#0F6E56';
+          result.textContent = email ? 'メールをおくったよ！' : 'おたよりをきろくしたよ！';
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'おたよりを送る';
+          result.style.color = '#c0392b';
+          result.textContent = 'エラーがおきたデス…';
+        }
+      })
+      .catch(() => {
+        btn.disabled = false;
+        btn.textContent = 'おたよりを送る';
+        result.style.color = '#c0392b';
+        result.textContent = 'つうしんエラーデス…';
+      });
   }
 
   // ======================== LocalStorage ========================
