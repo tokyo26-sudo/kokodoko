@@ -119,7 +119,7 @@
     .tab:hover { color: #1a1a1a; }
     .tab.active { color: #1D9E75; border-bottom-color: #1D9E75; }
 
-    .tab-content { display: none; padding: 1.5rem; max-width: 860px; margin: 0 auto; }
+    .tab-content { display: none; padding: 1.5rem; max-width: 1200px; margin: 0 auto; }
     .tab-content.active { display: block; }
 
     /* ========== CARDS ========== */
@@ -181,7 +181,17 @@
 
     /* ========== TABLE ========== */
     .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+    th { text-align: left; padding: 8px 10px; color: #aaa; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; border-bottom: 1px solid #e0ddd5; }
+    th:nth-child(1) { width: 8%; }   /* ハンドル名 */
+    th:nth-child(2) { width: 6%; }   /* ROOM */
+    th:nth-child(3) { width: 9%; }   /* 回答1 */
+    th:nth-child(4) { width: 9%; }   /* 回答2 */
+    th:nth-child(5) { width: 9%; }   /* 回答3 */
+    th:nth-child(6) { width: 6%; }   /* タイム */
+    th:nth-child(7) { width: 14%; }  /* 送信じこく */
+    th:nth-child(8) { width: 27%; }  /* おたより */
+    th:nth-child(9) { width: 12%; }  /* 判定 */
     th {
       text-align: left; padding: 8px 10px;
       color: #aaa; font-size: 11px;
@@ -373,7 +383,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 1.4</div>
+<div class="ver-badge">ver 1.5</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -587,8 +597,8 @@
         <td>${esc(r.ans3||'—')}</td>
         <td>${esc(fmtElapsed(r.elapsed))}</td>
         <td style="font-size:11px;color:#aaa;white-space:nowrap">${esc(String(r.submittedAt||'—'))}</td>
-        <td style="max-width:200px">
-          ${r.otayori ? `<textarea readonly style="width:100%;height:60px;font-size:12px;color:#555;border:1px solid #e0ddd5;border-radius:6px;padding:6px 8px;background:#fafaf8;resize:vertical;font-family:inherit;line-height:1.5">${esc(r.otayori)}</textarea>` : '<span style="color:#bbb">—</span>'}
+        <td>
+          ${r.otayori ? `<textarea readonly style="width:100%;height:70px;font-size:12px;color:#555;border:1px solid #e0ddd5;border-radius:6px;padding:6px 8px;background:#fafaf8;resize:vertical;font-family:inherit;line-height:1.5;display:block">${esc(r.otayori)}</textarea>` : '<span style="color:#bbb">—</span>'}
         </td>
         <td>
           <label style="margin-right:8px;font-size:12px;cursor:pointer">
