@@ -451,7 +451,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 1.9</div>
+<div class="ver-badge">ver 2.0</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -782,11 +782,22 @@
       container.innerHTML = '<div class="card" style="text-align:center;color:#bbb;padding:2rem">データなし</div>';
       return;
     }
-    container.innerHTML = filtered.map(r => `
-      <div class="card" style="margin-bottom:1rem">
+
+    // じゅうふくチェク
+    const countMap = {};
+    filtered.forEach(r => {
+      const key = r.roomId + '|' + r.handle;
+      countMap[key] = (countMap[key] || 0) + 1;
+    });
+
+    container.innerHTML = filtered.map(r => {
+      const isDup = countMap[r.roomId + '|' + r.handle] > 1;
+      return `
+      <div class="card" style="margin-bottom:1rem;${isDup ? 'border-left:4px solid #ffc107' : ''}">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
           <div>
             <span style="font-size:16px;font-weight:700">${esc(r.handle)}</span>
+            ${isDup ? '<span style="font-size:11px;background:#ffc107;color:#000;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">⚠️ 重複</span>' : ''}
             <span style="font-size:12px;color:#aaa;margin-left:10px">ROOM: ${esc(r.roomId)}</span>
           </div>
           <div style="display:flex;align-items:center;gap:16px">
@@ -825,7 +836,8 @@
             <input type="radio" name="card_judge_${r.rowIndex}" value="ng" ${r.judge1==='ng'?'checked':''} onchange="updateJudge(${r.rowIndex},this.value)"> ❌ ふせいかい
           </label>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 
   function renderAnswerTable() {
@@ -835,9 +847,21 @@
       tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#bbb;padding:2rem">データなし</td></tr>';
       return;
     }
-    tbody.innerHTML = filtered.map(r => `
-      <tr>
-        <td>${esc(r.handle)}</td>
+
+    // じゅうふくチェク：おなじroomId＋handleのくみあわせをさがす
+    const dupKeys = new Set();
+    const countMap = {};
+    filtered.forEach(r => {
+      const key = r.roomId + '|' + r.handle;
+      countMap[key] = (countMap[key] || 0) + 1;
+    });
+    Object.entries(countMap).forEach(([k, v]) => { if (v > 1) dupKeys.add(k); });
+
+    tbody.innerHTML = filtered.map(r => {
+      const isDup = dupKeys.has(r.roomId + '|' + r.handle);
+      return `
+      <tr style="${isDup ? 'background:#fff9f0' : ''}">
+        <td>${esc(r.handle)}${isDup ? ' <span style="font-size:10px;background:#ffc107;color:#000;padding:1px 6px;border-radius:10px;font-weight:700">⚠️ 重複</span>' : ''}</td>
         <td>${esc(r.roomId)}</td>
         <td>${esc(r.ans1||'—')}</td>
         <td>${esc(r.ans2||'—')}</td>
@@ -858,7 +882,8 @@
             <input type="radio" name="judge_${r.rowIndex}" value="ng" ${r.judge1==='ng'?'checked':''} onchange="updateJudge(${r.rowIndex},this.value)"> ❌
           </label>
         </td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   }
 
   function updateJudge(rowIndex, val) {
