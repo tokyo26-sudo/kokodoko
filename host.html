@@ -407,7 +407,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 1.7</div>
+<div class="ver-badge">ver 1.8</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -465,14 +465,14 @@
   function updateRoomDisplay() {
     document.getElementById('room-code-display').textContent = currentRoomCode || '----';
     const url = currentRoomCode
-      ? location.origin + '/index.html?id=' + currentRoomCode
+      ? location.origin + '/kokodoko/index.html?id=' + currentRoomCode
       : '—';
     document.getElementById('room-url-preview').textContent = url;
   }
 
   function copyRoomUrl() {
     if (!currentRoomCode) { alert('まずへやコードを発行してください'); return; }
-    const url = location.origin + '/index.html?id=' + currentRoomCode;
+    const url = location.origin + '/kokodoko/index.html?id=' + currentRoomCode;
     navigator.clipboard.writeText(url).then(() => alert('URLをコピーしました！'));
   }
 
