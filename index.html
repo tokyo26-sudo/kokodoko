@@ -381,7 +381,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 0.6</div>
+<div class="ver-badge">ver 0.8</div>
 
 <script>
   // ======================== Apps Script URL ========================
@@ -394,7 +394,8 @@
     handle: null,
     startTime: null,
     images: [null, null, null],
-    submitted: false
+    submitted: false,
+    elapsedAtSubmit: null
   };
 
   // ======================== 画面きりかえ ========================
@@ -415,7 +416,7 @@
     }
 
     if (state.submitted) {
-      showDone(false);
+      showDone(false, state.elapsedAtSubmit);
       return;
     }
 
@@ -643,16 +644,38 @@
 
   function finishGame(elapsed) {
     state.submitted = true;
+    state.elapsedAtSubmit = elapsed;
     clearInterval(timerInterval);
     saveState();
     showDone(true, elapsed);
   }
 
   function showDone(animate, elapsed) {
+    clearInterval(timerInterval);
     showScreen('screen-done');
-    const sec = elapsed !== undefined ? elapsed : getElapsedSec();
+    // おくたときのじかんをひょうじ。なければLocalStorageのelapsedAtSubmitをつかう
+    const sec = elapsed !== undefined && elapsed !== null
+      ? elapsed
+      : (state.elapsedAtSubmit || 0);
     document.getElementById('done-time-display').textContent = formatTime(sec);
     document.getElementById('done-handle-disp').textContent = state.handle ? state.handle + ' さん' : '';
+
+    // テストモドのときだけリセトボタンをかんりょう画面にだす
+    if (state.roomId === 'TEST' && !document.getElementById('done-reset-btn')) {
+      const btn = document.createElement('button');
+      btn.id = 'done-reset-btn';
+      btn.textContent = '🔄 テストリセット';
+      btn.style.cssText = 'display:block;width:100%;margin-top:20px;padding:10px;font-size:13px;background:#fff;color:#856404;border:1px solid #ffc107;border-radius:8px;cursor:pointer;font-family:inherit;';
+      btn.onclick = () => {
+        localStorage.removeItem(STATE_KEY);
+        state = { roomId: 'TEST', handle: null, startTime: null, images: TEST_IMAGES, submitted: false };
+        showScreen('screen-handle');
+        document.getElementById('handle-room-badge').textContent = 'へやコード：TEST';
+        document.getElementById('handle-input').value = '';
+        document.getElementById('start-btn').disabled = true;
+      };
+      document.querySelector('.done-note').after(btn);
+    }
   }
 
   // ======================== LocalStorage ========================
