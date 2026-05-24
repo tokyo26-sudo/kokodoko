@@ -402,7 +402,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 1.7</div>
+<div class="ver-badge">ver 1.8</div>
 
 <script>
   // ======================== Apps Script URL ========================
@@ -415,6 +415,7 @@
     handle: null,
     startTime: null,
     images: [null, null, null],
+    questions: null,
     submitted: false,
     elapsedAtSubmit: null
   };
@@ -566,12 +567,13 @@
         document.getElementById('test-badge').after(resetBtn);
       }
     } else {
-      // Apps Script から画像URLをとってくる
+      // Apps Script から画像URLとしつもんぶんをとってくる
       fetch(APPS_SCRIPT_URL + '?action=getRoom&roomId=' + state.roomId)
         .then(r => r.json())
         .then(data => {
           if (data.ok) {
             state.images = data.images;
+            state.questions = data.questions || ['ここはどこ？','ここはどこ？','ここはどこ？'];
             saveState();
           } else {
             alert('へやがみつからないデス：' + (data.error || ''));
@@ -586,13 +588,16 @@
   }
 
   function setupImages() {
+    const questions = state.questions || ['ここはどこ？（都市名・場所名など）','ここはどこ？（都市名・場所名など）','ここはどこ？（都市名・場所名など）'];
     for (let i = 0; i < 3; i++) {
       const wrap = document.getElementById('wrap-' + i);
       if (state.images[i]) {
         wrap.innerHTML = `
-          <img src="${state.images[i]}" alt="写真${i+1}" style="width:100%;height:220px;object-fit:cover;display:block;">
+          <img src="${state.images[i]}" alt="写真${i+1}" style="width:100%;height:220px;object-fit:contain;display:block;background:#f0ede8;">
           <div class="img-zoom-hint">🔍 クリックで大きく見る</div>`;
       }
+      const ans = document.getElementById('ans-' + i);
+      if (ans) ans.placeholder = questions[i];
     }
   }
 

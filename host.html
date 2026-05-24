@@ -276,40 +276,84 @@
   <!-- ====== TAB: へや設定 ====== -->
   <div class="tab-content active" id="tab-room">
 
-    <div class="card">
-      <div class="card-title">へや コード</div>
-      <div class="room-code-big" id="room-code-display">----</div>
-      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        <button class="btn-sm" onclick="generateRoomCode()">新しいコードを発行</button>
-        <button class="btn-sm ghost-sm" onclick="copyRoomUrl()">参加URLをコピー</button>
-      </div>
-      <div class="room-url-preview" id="room-url-preview">—</div>
+    <!-- へやいちらん -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
+      <div style="font-size:15px;font-weight:700">📋 へや一覧</div>
+      <button class="btn-sm" onclick="showNewRoomForm()">＋ あたらしいへやをつくる</button>
     </div>
 
-    <div class="card">
-      <div class="card-title">問題の写真（3まい）</div>
-      <div class="photo-slots">
-        <div class="photo-slot" id="slot-0" onclick="clickSlot(0)">
-          <span style="font-size:22px">＋</span>
-          <div class="photo-slot-num">写真 1</div>
-          <button class="remove-btn" onclick="removePhoto(event,0)">✕</button>
-        </div>
-        <div class="photo-slot" id="slot-1" onclick="clickSlot(1)">
-          <span style="font-size:22px">＋</span>
-          <div class="photo-slot-num">写真 2</div>
-          <button class="remove-btn" onclick="removePhoto(event,1)">✕</button>
-        </div>
-        <div class="photo-slot" id="slot-2" onclick="clickSlot(2)">
-          <span style="font-size:22px">＋</span>
-          <div class="photo-slot-num">写真 3</div>
-          <button class="remove-btn" onclick="removePhoto(event,2)">✕</button>
-        </div>
+    <div id="room-list">
+      <div class="card" style="text-align:center;color:#bbb;padding:2rem">
+        （再読み込みボタンをおしてクダサイ）
       </div>
-      <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
-      <p style="font-size:12px;color:#aaa;margin-bottom:1rem">
-        ※ ブラウザが自動圧縮してゲームに使用します。元の大きい画像はGoogleドライブにアップされます。
-      </p>
-      <button class="btn-green" onclick="publishGame()">ゲームを公開する</button>
+    </div>
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <button class="btn-sm ghost-sm" onclick="loadRoomList()">🔄 再読み込み</button>
+    </div>
+
+    <!-- あたらしいへやフォム -->
+    <div id="new-room-form" style="display:none">
+      <div class="card">
+        <div class="card-title">あたらしいへやをつくる</div>
+
+        <!-- へやコド -->
+        <div style="margin-bottom:1.2rem">
+          <div style="font-size:13px;font-weight:700;margin-bottom:6px">へや コード</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="room-code-big" id="room-code-display" style="font-size:2.5rem;margin:0">----</div>
+            <button class="btn-sm" onclick="generateRoomCode()">発行</button>
+          </div>
+        </div>
+
+        <!-- しゃしん3まい＋もんだいぶん -->
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px">問題の写真（3まい）</div>
+
+        <div style="margin-bottom:1.2rem">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+            <div class="photo-slot" id="slot-0" onclick="clickSlot(0)">
+              <span style="font-size:22px">＋</span>
+              <div class="photo-slot-num">写真 1</div>
+              <button class="remove-btn" onclick="removePhoto(event,0)">✕</button>
+            </div>
+            <div class="photo-slot" id="slot-1" onclick="clickSlot(1)">
+              <span style="font-size:22px">＋</span>
+              <div class="photo-slot-num">写真 2</div>
+              <button class="remove-btn" onclick="removePhoto(event,1)">✕</button>
+            </div>
+            <div class="photo-slot" id="slot-2" onclick="clickSlot(2)">
+              <span style="font-size:22px">＋</span>
+              <div class="photo-slot-num">写真 3</div>
+              <button class="remove-btn" onclick="removePhoto(event,2)">✕</button>
+            </div>
+          </div>
+
+          <!-- もんだいぶん3まいぶん -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div>
+              <div style="font-size:11px;color:#aaa;margin-bottom:4px">写真1 の問題文</div>
+              <input type="text" id="q-0" placeholder="例：ここはどこ？" style="font-size:13px;padding:8px 10px">
+            </div>
+            <div>
+              <div style="font-size:11px;color:#aaa;margin-bottom:4px">写真2 の問題文</div>
+              <input type="text" id="q-1" placeholder="例：この建物は？" style="font-size:13px;padding:8px 10px">
+            </div>
+            <div>
+              <div style="font-size:11px;color:#aaa;margin-bottom:4px">写真3 の問題文</div>
+              <input type="text" id="q-2" placeholder="例：どこの川？" style="font-size:13px;padding:8px 10px">
+            </div>
+          </div>
+        </div>
+
+        <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
+        <p style="font-size:12px;color:#aaa;margin-bottom:1rem">
+          ※ ブラウザが自動圧縮してゲームに使用します。元の大きい画像はGoogleドライブにアップされます。
+        </p>
+        <div style="display:flex;gap:8px">
+          <button class="btn-green" onclick="publishGame()" style="flex:1" id="publish-btn">ゲームを公開する</button>
+          <button class="btn-sm ghost-sm" onclick="hideNewRoomForm()" style="padding:13px 16px">キャンセル</button>
+        </div>
+        <div class="room-url-preview" id="room-url-preview" style="margin-top:0.8rem">—</div>
+      </div>
     </div>
 
   </div>
@@ -407,7 +451,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 1.8</div>
+<div class="ver-badge">ver 1.9</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -444,26 +488,98 @@
     document.querySelectorAll('.tab')[TAB_IDS.indexOf(id)].classList.add('active');
   }
 
+  // ========== へやいちらん ==========
+  function loadRoomList() {
+    fetch(APPS_SCRIPT_URL + '?action=getRooms&password=' + HOST_PASSWORD)
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) renderRoomList(data.rooms);
+        else document.getElementById('room-list').innerHTML =
+          '<div class="card" style="text-align:center;color:#bbb;padding:2rem">データなし</div>';
+      })
+      .catch(() => {
+        document.getElementById('room-list').innerHTML =
+          '<div class="card" style="text-align:center;color:#bbb;padding:2rem">よみこみエラーデス</div>';
+      });
+  }
+
+  function renderRoomList(rooms) {
+    const container = document.getElementById('room-list');
+    if (!rooms || !rooms.length) {
+      container.innerHTML = '<div class="card" style="text-align:center;color:#bbb;padding:2rem">へやがまだないデス。「あたらしいへやをつくる」をおしてクダサイ！</div>';
+      return;
+    }
+    container.innerHTML = rooms.map(r => `
+      <div class="card" style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div>
+            <span style="font-size:28px;font-weight:700;color:#1D9E75;letter-spacing:0.2em">${esc(String(r.roomId))}</span>
+            <span style="font-size:12px;margin-left:10px;padding:3px 10px;border-radius:20px;background:${r.status==='active'?'#E1F5EE':'#f0ede8'};color:${r.status==='active'?'#0F6E56':'#aaa'}">${r.status==='active'?'🟢 公開中':'⚪ 終了'}</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn-sm ghost-sm" onclick="copyUrl('${r.roomId}')">URLをコピー</button>
+            ${r.status==='active' ? `<button class="btn-sm danger-sm" onclick="closeRoom('${r.roomId}')">終了</button>` : ''}
+          </div>
+        </div>
+        <div style="font-size:11px;color:#aaa;margin-top:6px">${esc(String(r.publishedAt||''))}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">
+          ${[r.image1,r.image2,r.image3].map((img,i) => `
+            <div style="aspect-ratio:4/3;background:#f0ede8;border-radius:8px;overflow:hidden;border:1px solid #e0ddd5">
+              ${img ? `<img src="${esc(img)}" style="width:100%;height:100%;object-fit:contain">` : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:12px">なし</div>'}
+            </div>`).join('')}
+        </div>
+        ${(r.q1||r.q2||r.q3) ? `
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
+          ${[r.q1,r.q2,r.q3].map((q,i) => `<div style="font-size:12px;color:#555;background:#f7f6f2;border-radius:6px;padding:6px 8px">${esc(q||'（問題文なし）')}</div>`).join('')}
+        </div>` : ''}
+      </div>`).join('');
+  }
+
+  function copyUrl(roomId) {
+    const url = location.origin + '/kokodoko/index.html?id=' + roomId;
+    navigator.clipboard.writeText(url).then(() => alert('URLをコピーしました！\n' + url));
+  }
+
+  function closeRoom(roomId) {
+    if (!confirm('ROOM ' + roomId + ' を終了しますか？')) return;
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'closeRoom', password: HOST_PASSWORD, roomId })
+    })
+      .then(r => r.json())
+      .then(data => { if (data.ok) loadRoomList(); else alert('エラー：' + data.error); })
+      .catch(() => alert('つうしんエラーデス'));
+  }
+
+  function showNewRoomForm() {
+    document.getElementById('new-room-form').style.display = 'block';
+    generateRoomCode();
+    window.scrollTo(0, document.getElementById('new-room-form').offsetTop - 20);
+  }
+
+  function hideNewRoomForm() {
+    document.getElementById('new-room-form').style.display = 'none';
+    slotFiles = [null, null, null];
+    for (let i = 0; i < 3; i++) resetSlot(i);
+  }
+
   // ========== 起動 ==========
   let currentRoomCode = null;
   let slotFiles = [null, null, null];
   let activeSlot = null;
 
   function initMain() {
-    const saved = localStorage.getItem('host_roomcode');
-    if (saved) { currentRoomCode = saved; updateRoomDisplay(); }
+    loadRoomList();
   }
 
   // ========== ROOM CODE ==========
   function generateRoomCode() {
-    if (!confirm('新しいへやコードを発行します。現在のへやは終了します。よいですか？')) return;
     currentRoomCode = String(Math.floor(1000 + Math.random() * 9000));
-    localStorage.setItem('host_roomcode', currentRoomCode);
+    document.getElementById('room-code-display').textContent = currentRoomCode;
     updateRoomDisplay();
   }
 
   function updateRoomDisplay() {
-    document.getElementById('room-code-display').textContent = currentRoomCode || '----';
     const url = currentRoomCode
       ? location.origin + '/kokodoko/index.html?id=' + currentRoomCode
       : '—';
@@ -474,6 +590,16 @@
     if (!currentRoomCode) { alert('まずへやコードを発行してください'); return; }
     const url = location.origin + '/kokodoko/index.html?id=' + currentRoomCode;
     navigator.clipboard.writeText(url).then(() => alert('URLをコピーしました！'));
+  }
+
+  function resetSlot(i) {
+    const slot = document.getElementById('slot-' + i);
+    if (!slot) return;
+    slot.classList.remove('has-photo');
+    slot.innerHTML = `
+      <span style="font-size:22px">＋</span>
+      <div class="photo-slot-num">写真 ${i+1}</div>
+      <button class="remove-btn" onclick="removePhoto(event,${i})">✕</button>`;
   }
 
   // ========== 写真スロット ==========
@@ -574,9 +700,13 @@
     const count = slotFiles.filter(f => f !== null).length;
     if (count < 3) { alert('写真が' + (3 - count) + 'まい足りません'); return; }
 
-    // スピナひょうじ
-    const btn = document.querySelector('#tab-room .btn-green');
-    const originalText = btn.textContent;
+    const questions = [
+      document.getElementById('q-0').value.trim() || 'ここはどこ？',
+      document.getElementById('q-1').value.trim() || 'ここはどこ？',
+      document.getElementById('q-2').value.trim() || 'ここはどこ？'
+    ];
+
+    const btn = document.getElementById('publish-btn');
     btn.disabled = true;
     btn.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite">⏳</span> アップロード中…';
 
@@ -586,22 +716,27 @@
         action: 'publishRoom',
         password: HOST_PASSWORD,
         roomId: currentRoomCode,
-        images: slotFiles
+        images: slotFiles,
+        questions
       })
     })
       .then(r => r.json())
       .then(data => {
         btn.disabled = false;
-        btn.textContent = originalText;
+        btn.textContent = 'ゲームを公開する';
         if (data.ok) {
-          alert('ROOM ' + currentRoomCode + ' でゲームを公開しました！\nさんかしゃURLをコピしてシェアしてクダサイ！');
+          const url = location.origin + '/kokodoko/index.html?id=' + currentRoomCode;
+          document.getElementById('room-url-preview').textContent = url;
+          alert('ROOM ' + currentRoomCode + ' でゲームを公開しました！');
+          hideNewRoomForm();
+          loadRoomList();
         } else {
           alert('エラー：' + (data.error || ''));
         }
       })
       .catch(() => {
         btn.disabled = false;
-        btn.textContent = originalText;
+        btn.textContent = 'ゲームを公開する';
         alert('つうしんエラーデス');
       });
   }
