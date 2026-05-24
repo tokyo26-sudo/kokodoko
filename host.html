@@ -318,37 +318,56 @@
         <div style="display:flex;gap:8px;align-items:center">
           <input type="text" id="filter-room" placeholder="ROOM ID"
             style="width:110px;padding:7px 10px;font-size:13px;margin:0"
-            oninput="renderAnswerTable()">
+            oninput="renderAnswers()">
+          <!-- ひょうじきりかえスイッチ -->
+          <div style="display:flex;border:1px solid #e0ddd5;border-radius:8px;overflow:hidden">
+            <button id="btn-table-view" onclick="setViewMode('table')"
+              style="padding:7px 12px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:#1D9E75;color:#fff;font-family:inherit">
+              ☰ テーブル
+            </button>
+            <button id="btn-card-view" onclick="setViewMode('card')"
+              style="padding:7px 12px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:#fff;color:#888;font-family:inherit">
+              ▦ カード
+            </button>
+          </div>
           <button class="btn-sm ghost-sm" onclick="loadAnswers()">再読み込み</button>
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>ハンドル名</th>
-              <th>ROOM</th>
-              <th>回答1</th>
-              <th>回答2</th>
-              <th>回答3</th>
-              <th>タイム</th>
-              <th>送信じこく</th>
-              <th>おたより</th>
-              <th>判定</th>
-            </tr>
-          </thead>
-          <tbody id="answer-tbody">
-            <tr>
-              <td colspan="9" style="text-align:center;color:#bbb;padding:2rem">
-                （Apps Script と接続後に表示されます）
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- テーブルひょうじ -->
+    <div id="view-table">
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ハンドル名</th>
+                <th>ROOM</th>
+                <th>回答1</th>
+                <th>回答2</th>
+                <th>回答3</th>
+                <th>タイム</th>
+                <th>送信じこく</th>
+                <th>おたより</th>
+                <th>判定</th>
+              </tr>
+            </thead>
+            <tbody id="answer-tbody">
+              <tr>
+                <td colspan="9" style="text-align:center;color:#bbb;padding:2rem">
+                  （再読み込みボタンをおしてクダサイ）
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+    </div>
+
+    <!-- カードひょうじ -->
+    <div id="view-card" style="display:none">
+      <div id="answer-cards"></div>
     </div>
 
   </div>
@@ -383,7 +402,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 1.5</div>
+<div class="ver-badge">ver 1.6</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -566,6 +585,25 @@
       .catch(() => alert('つうしんエラーデス'));
   }
 
+  // ========== ひょうじモードきりかえ ==========
+  let viewMode = 'table';
+
+  function setViewMode(mode) {
+    viewMode = mode;
+    document.getElementById('view-table').style.display = mode === 'table' ? 'block' : 'none';
+    document.getElementById('view-card').style.display = mode === 'card' ? 'block' : 'none';
+    document.getElementById('btn-table-view').style.background = mode === 'table' ? '#1D9E75' : '#fff';
+    document.getElementById('btn-table-view').style.color = mode === 'table' ? '#fff' : '#888';
+    document.getElementById('btn-card-view').style.background = mode === 'card' ? '#1D9E75' : '#fff';
+    document.getElementById('btn-card-view').style.color = mode === 'card' ? '#fff' : '#888';
+    renderAnswers();
+  }
+
+  function renderAnswers() {
+    if (viewMode === 'table') renderAnswerTable();
+    else renderAnswerCards();
+  }
+
   // ========== 回答テーブル ==========
   let answersData = [];
 
@@ -574,15 +612,68 @@
     fetch(APPS_SCRIPT_URL + '?action=getAnswers&password=' + HOST_PASSWORD + (filterRoom ? '&roomId=' + filterRoom : ''))
       .then(r => r.json())
       .then(data => {
-        if (data.ok) { answersData = data.answers; renderAnswerTable(); }
+        if (data.ok) { answersData = data.answers; renderAnswers(); }
         else alert('エラー：' + (data.error || ''));
       })
       .catch(() => alert('つうしんエラーデス'));
   }
 
-  function renderAnswerTable() {
+  function renderAnswerCards() {
     const filterRoom = document.getElementById('filter-room').value.trim();
     const filtered = filterRoom ? answersData.filter(r => String(r.roomId) === filterRoom) : answersData;
+    const container = document.getElementById('answer-cards');
+    if (!filtered.length) {
+      container.innerHTML = '<div class="card" style="text-align:center;color:#bbb;padding:2rem">データなし</div>';
+      return;
+    }
+    container.innerHTML = filtered.map(r => `
+      <div class="card" style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          <div>
+            <span style="font-size:16px;font-weight:700">${esc(r.handle)}</span>
+            <span style="font-size:12px;color:#aaa;margin-left:10px">ROOM: ${esc(r.roomId)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <span style="font-size:13px;color:#1D9E75;font-weight:700">⏱ ${esc(fmtElapsed(r.elapsed))}</span>
+            <span style="font-size:11px;color:#aaa">${esc(String(r.submittedAt||''))}</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+          <div style="background:#f7f6f2;border-radius:8px;padding:10px">
+            <div style="font-size:10px;color:#aaa;margin-bottom:4px">📷 写真1</div>
+            <div style="font-size:14px;font-weight:600">${esc(r.ans1||'（なし）')}</div>
+          </div>
+          <div style="background:#f7f6f2;border-radius:8px;padding:10px">
+            <div style="font-size:10px;color:#aaa;margin-bottom:4px">📷 写真2</div>
+            <div style="font-size:14px;font-weight:600">${esc(r.ans2||'（なし）')}</div>
+          </div>
+          <div style="background:#f7f6f2;border-radius:8px;padding:10px">
+            <div style="font-size:10px;color:#aaa;margin-bottom:4px">📷 写真3</div>
+            <div style="font-size:14px;font-weight:600">${esc(r.ans3||'（なし）')}</div>
+          </div>
+        </div>
+        ${r.otayori ? `
+        <div style="background:#f0faf6;border:1px solid #b2e8d4;border-radius:8px;padding:10px;margin-bottom:14px">
+          <div style="font-size:10px;color:#0F6E56;margin-bottom:4px">📝 おたより</div>
+          <div style="font-size:13px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap">${esc(r.otayori)}</div>
+        </div>` : ''}
+        <div style="display:flex;align-items:center;gap:16px;border-top:1px solid #f0ede8;padding-top:12px">
+          <span style="font-size:12px;color:#aaa">判定：</span>
+          <label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px">
+            <input type="radio" name="card_judge_${r.rowIndex}" value="pending" ${!r.judge1||r.judge1==='pending'?'checked':''} onchange="updateJudge(${r.rowIndex},this.value)"> 未判定
+          </label>
+          <label style="font-size:13px;cursor:pointer;color:#0F6E56;display:flex;align-items:center;gap:4px">
+            <input type="radio" name="card_judge_${r.rowIndex}" value="ok" ${r.judge1==='ok'?'checked':''} onchange="updateJudge(${r.rowIndex},this.value)"> ✅ 正かい
+          </label>
+          <label style="font-size:13px;cursor:pointer;color:#c0392b;display:flex;align-items:center;gap:4px">
+            <input type="radio" name="card_judge_${r.rowIndex}" value="ng" ${r.judge1==='ng'?'checked':''} onchange="updateJudge(${r.rowIndex},this.value)"> ❌ ふせいかい
+          </label>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderAnswerTable() {
+    const filterRoom = document.getElementById('filter-room').value.trim();    const filtered = filterRoom ? answersData.filter(r => String(r.roomId) === filterRoom) : answersData;
     const tbody = document.getElementById('answer-tbody');
     if (!filtered.length) {
       tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#bbb;padding:2rem">データなし</td></tr>';
