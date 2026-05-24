@@ -373,7 +373,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 1.3</div>
+<div class="ver-badge">ver 1.4</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -585,9 +585,11 @@
         <td>${esc(r.ans1||'—')}</td>
         <td>${esc(r.ans2||'—')}</td>
         <td>${esc(r.ans3||'—')}</td>
-        <td>${esc(String(r.elapsed||'—'))}</td>
+        <td>${esc(fmtElapsed(r.elapsed))}</td>
         <td style="font-size:11px;color:#aaa;white-space:nowrap">${esc(String(r.submittedAt||'—'))}</td>
-        <td style="font-size:12px;color:#555;max-width:200px">${esc(r.otayori||'—')}</td>
+        <td style="max-width:200px">
+          ${r.otayori ? `<textarea readonly style="width:100%;height:60px;font-size:12px;color:#555;border:1px solid #e0ddd5;border-radius:6px;padding:6px 8px;background:#fafaf8;resize:vertical;font-family:inherit;line-height:1.5">${esc(r.otayori)}</textarea>` : '<span style="color:#bbb">—</span>'}
+        </td>
         <td>
           <label style="margin-right:8px;font-size:12px;cursor:pointer">
             <input type="radio" name="judge_${r.rowIndex}" value="pending" ${!r.judge1||r.judge1==='pending'?'checked':''} onchange="updateJudge(${r.rowIndex},this.value)"> 未
@@ -663,6 +665,28 @@
         d.getHours().toString().padStart(2,'0') + ':' +
         d.getMinutes().toString().padStart(2,'0');
     } catch(e) { return '—'; }
+  }
+
+  function fmtElapsed(val) {
+    if (!val && val !== 0) return '—';
+    const s = String(val);
+    // すでにMM:SSけいしきならそのままかえす
+    if (/^\d{2}:\d{2}$/.test(s)) return s;
+    // スプレッドシトがじかんがたにかえてしまたばあい（ISOけいしき）
+    if (s.includes('T') || s.includes('1899')) {
+      try {
+        const d = new Date(s);
+        const totalSec = Math.round((d.getTime() - new Date('1899-12-30').getTime()) / 1000);
+        const mm = Math.floor(totalSec / 60).toString().padStart(2, '0');
+        const ss = (totalSec % 60).toString().padStart(2, '0');
+        return mm + ':' + ss;
+      } catch(e) { return s; }
+    }
+    // びょうすうのばあい
+    const sec = parseInt(val) || 0;
+    const mm = Math.floor(sec / 60).toString().padStart(2, '0');
+    const ss = (sec % 60).toString().padStart(2, '0');
+    return mm + ':' + ss;
   }
 
   function fmtTime(sec) {
