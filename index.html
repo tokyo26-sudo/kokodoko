@@ -402,7 +402,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 1.5</div>
+<div class="ver-badge">ver 1.6</div>
 
 <script>
   // ======================== Apps Script URL ========================
@@ -495,20 +495,22 @@
   }
 
   // ======================== HANDLE ========================
+  // はじめに1かいだけイベントリスナをつける
+  const handleInputEl = document.getElementById('handle-input');
+  const startBtnEl = document.getElementById('start-btn');
+  handleInputEl.addEventListener('input', () => {
+    startBtnEl.disabled = handleInputEl.value.trim().length === 0;
+    document.getElementById('handle-error').textContent = '';
+  });
+
   function showHandleScreen() {
     showScreen('screen-handle');
     document.getElementById('handle-room-badge').textContent = 'へやコード：' + state.roomId;
-    const hi = document.getElementById('handle-input');
-    const sb = document.getElementById('start-btn');
-    hi.addEventListener('input', () => {
-      sb.disabled = hi.value.trim().length === 0;
-      document.getElementById('handle-error').textContent = '';
-    });
-    sb.disabled = hi.value.trim().length === 0;
+    startBtnEl.disabled = handleInputEl.value.trim().length === 0;
   }
 
   function startGame() {
-    const h = document.getElementById('handle-input').value.trim();
+    const h = handleInputEl.value.trim();
     if (!h) {
       document.getElementById('handle-error').textContent = 'ハンドル名を入れてね';
       return;
@@ -558,8 +560,8 @@
           if (btn) { btn.disabled = false; btn.textContent = '回答を送信する'; }
           showScreen('screen-handle');
           document.getElementById('handle-room-badge').textContent = 'へやコード：TEST';
-          document.getElementById('handle-input').value = '';
-          document.getElementById('start-btn').disabled = true;
+          handleInputEl.value = '';
+          startBtnEl.disabled = true;
         };
         document.getElementById('test-badge').after(resetBtn);
       }
@@ -703,8 +705,8 @@
         });
         showScreen('screen-handle');
         document.getElementById('handle-room-badge').textContent = 'へやコード：TEST';
-        document.getElementById('handle-input').value = '';
-        document.getElementById('start-btn').disabled = true;
+        handleInputEl.value = '';
+        startBtnEl.disabled = true;
       };
       document.querySelector('.done-note').after(btn);
     }
