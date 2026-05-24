@@ -232,6 +232,11 @@
     .upload-card-actions { display: flex; gap: 6px; }
 
     /* ========== VER ========== */
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     .ver-badge {
       position: fixed; bottom: 0.8rem; right: 1rem;
       font-size: 11px; color: #ccc; z-index: 100;
@@ -402,7 +407,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 1.6</div>
+<div class="ver-badge">ver 1.7</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -568,6 +573,13 @@
     if (!currentRoomCode) { alert('まずへやコードを発行してください'); return; }
     const count = slotFiles.filter(f => f !== null).length;
     if (count < 3) { alert('写真が' + (3 - count) + 'まい足りません'); return; }
+
+    // スピナひょうじ
+    const btn = document.querySelector('#tab-room .btn-green');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite">⏳</span> アップロード中…';
+
     fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({
@@ -579,10 +591,19 @@
     })
       .then(r => r.json())
       .then(data => {
-        if (data.ok) alert('ROOM ' + currentRoomCode + ' でゲームを公開しました！');
-        else alert('エラー：' + (data.error || ''));
+        btn.disabled = false;
+        btn.textContent = originalText;
+        if (data.ok) {
+          alert('ROOM ' + currentRoomCode + ' でゲームを公開しました！\nさんかしゃURLをコピしてシェアしてクダサイ！');
+        } else {
+          alert('エラー：' + (data.error || ''));
+        }
       })
-      .catch(() => alert('つうしんエラーデス'));
+      .catch(() => {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        alert('つうしんエラーデス');
+      });
   }
 
   // ========== ひょうじモードきりかえ ==========
