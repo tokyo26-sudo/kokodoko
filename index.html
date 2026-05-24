@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ここどこ？</title>
+  <!-- ver 0.2 -->
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+      background: #f7f6f2;
+      min-height: 100vh;
+      color: #1a1a1a;
+    }
+
+    /* ===================== SCREENS ===================== */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ===================== TOP ===================== */
+    #screen-top .hero {
+      text-align: center;
+      padding: 3rem 1rem 2rem;
+    }
+    .logo {
+      font-size: 52px;
+      font-weight: 700;
+      letter-spacing: -2px;
+      color: #1a1a1a;
+    }
+    .logo span { color: #1D9E75; }
+    .tagline { font-size: 16px; color: #666; margin-top: 10px; }
+
+    .main-card { max-width: 420px; margin: 0 auto 1.5rem; padding: 0 1rem; }
+    .big-card {
+      background: #fff;
+      border: 1px solid #e0ddd5;
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+    }
+    .big-card-icon { font-size: 40px; color: #1D9E75; margin-bottom: 14px; }
+    .big-card-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .big-card-desc { font-size: 14px; color: #666; margin-bottom: 24px; line-height: 1.7; }
+
+    .code-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 8px; }
+    .code-input {
+      width: 58px; height: 58px;
+      text-align: center;
+      font-size: 26px; font-weight: 700;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      background: #f7f6f2;
+      color: #1a1a1a;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .code-input:focus { border-color: #1D9E75; box-shadow: 0 0 0 3px #E1F5EE; }
+    .code-hint { font-size: 12px; color: #999; margin-bottom: 16px; }
+    .err { font-size: 13px; color: #c0392b; min-height: 18px; margin-bottom: 8px; }
+
+    .btn-green {
+      width: 100%; padding: 13px;
+      font-size: 16px; font-weight: 700;
+      background: #1D9E75; color: #fff;
+      border: none; border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+      letter-spacing: 0.5px;
+    }
+    .btn-green:hover { background: #0F6E56; }
+    .btn-green:disabled { background: #ccc; cursor: not-allowed; }
+
+    .btn-ghost {
+      width: 100%; padding: 11px;
+      font-size: 14px; font-weight: 600;
+      background: transparent; color: #888;
+      border: 1px solid #e0ddd5;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-ghost:hover { border-color: #1D9E75; color: #1D9E75; }
+
+    .divider {
+      max-width: 420px; margin: 0 auto 1.5rem;
+      padding: 0 1rem;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .divider-line { flex: 1; height: 1px; background: #e0ddd5; }
+    .divider-text { font-size: 13px; color: #aaa; }
+
+    .small-section { max-width: 420px; margin: 0 auto 3rem; padding: 0 1rem; }
+    .small-card {
+      background: #fff; border: 1px solid #e0ddd5;
+      border-radius: 12px; padding: 1rem 1.25rem;
+      display: flex; align-items: center; gap: 16px;
+      cursor: pointer; text-decoration: none; color: inherit;
+      transition: border-color 0.15s;
+    }
+    .small-card:hover { border-color: #1D9E75; }
+    .small-card-icon { font-size: 24px; color: #888; flex-shrink: 0; }
+    .small-card-body { flex: 1; }
+    .small-card-title { font-size: 15px; font-weight: 700; }
+    .small-card-desc { font-size: 13px; color: #888; margin-top: 2px; }
+    .small-card-arrow { font-size: 18px; color: #ccc; }
+
+    footer { text-align: center; padding: 1.5rem; font-size: 12px; color: #bbb; border-top: 1px solid #e0ddd5; }
+
+    /* ===================== HANDLE ===================== */
+    #screen-handle .enter-wrap {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 2rem 1rem;
+    }
+    #screen-handle .logo { margin-bottom: 2rem; }
+    .enter-card {
+      background: #fff; border: 1px solid #e0ddd5;
+      border-radius: 16px; padding: 2.5rem 2rem;
+      text-align: center; width: 100%; max-width: 380px;
+    }
+    .room-badge {
+      display: inline-block;
+      font-size: 13px; padding: 4px 14px;
+      border-radius: 20px;
+      background: #E1F5EE; color: #0F6E56;
+      font-weight: 700; margin-bottom: 18px;
+    }
+    .enter-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .enter-sub { font-size: 14px; color: #888; margin-bottom: 20px; }
+    input.handle-inp {
+      width: 100%; padding: 12px 14px;
+      font-size: 16px;
+      border: 1.5px solid #ddd; border-radius: 10px;
+      background: #f7f6f2; color: #1a1a1a;
+      outline: none; margin-bottom: 16px;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+    input.handle-inp:focus { border-color: #1D9E75; box-shadow: 0 0 0 3px #E1F5EE; }
+    .err-small { font-size: 13px; color: #c0392b; min-height: 18px; margin-bottom: 8px; }
+
+    /* ===================== GAME ===================== */
+    #screen-game { background: #f7f6f2; }
+    .game-wrap { max-width: 620px; margin: 0 auto; padding: 1rem 1rem 3rem; }
+
+    .timer-bar {
+      background: #fff; border: 1px solid #e0ddd5;
+      border-radius: 12px; padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.5rem;
+      position: sticky; top: 8px; z-index: 10;
+    }
+    .timer-label { font-size: 12px; color: #888; margin-bottom: 2px; }
+    .timer-val {
+      font-size: 28px; font-weight: 700;
+      color: #1D9E75;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 1px;
+    }
+    .timer-handle { font-size: 14px; color: #888; font-weight: 700; }
+
+    .img-section {
+      background: #fff; border: 1px solid #e0ddd5;
+      border-radius: 14px; padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .img-num { font-size: 13px; font-weight: 700; color: #1D9E75; margin-bottom: 10px; }
+    .img-wrap {
+      position: relative; border-radius: 10px;
+      overflow: hidden; border: 1px solid #e0ddd5;
+      margin-bottom: 12px; cursor: zoom-in;
+      background: #f0ede8;
+    }
+    .img-wrap img { width: 100%; height: 220px; object-fit: cover; display: block; }
+    .img-placeholder {
+      width: 100%; height: 220px;
+      display: flex; align-items: center; justify-content: center;
+      color: #bbb; font-size: 14px;
+    }
+    .img-zoom-hint {
+      position: absolute; bottom: 8px; right: 8px;
+      background: rgba(0,0,0,0.5); color: #fff;
+      font-size: 11px; padding: 3px 9px; border-radius: 5px;
+      pointer-events: none;
+    }
+    textarea.answer {
+      width: 100%; padding: 11px 14px;
+      font-size: 15px;
+      border: 1.5px solid #ddd; border-radius: 10px;
+      background: #f7f6f2; color: #1a1a1a;
+      outline: none; resize: vertical; min-height: 76px;
+      line-height: 1.6;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+    textarea.answer:focus { border-color: #1D9E75; box-shadow: 0 0 0 3px #E1F5EE; }
+    .char-hint { font-size: 12px; color: #bbb; margin-top: 5px; text-align: right; }
+
+    .submit-area { text-align: center; padding: 1.5rem 0 0; }
+    .btn-submit {
+      padding: 15px 52px;
+      font-size: 17px; font-weight: 700;
+      background: #1D9E75; color: #fff;
+      border: none; border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      letter-spacing: 0.5px;
+    }
+    .btn-submit:hover { background: #0F6E56; }
+    .btn-submit:active { transform: scale(0.97); }
+    .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+    .submit-note { font-size: 13px; color: #aaa; margin-top: 10px; }
+
+    /* ===================== DONE ===================== */
+    #screen-done .done-wrap {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .done-card {
+      background: #fff; border: 1px solid #e0ddd5;
+      border-radius: 16px; padding: 3rem 2rem;
+      text-align: center; width: 100%; max-width: 380px;
+    }
+    .done-icon { font-size: 52px; margin-bottom: 16px; }
+    .done-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .done-sub { font-size: 14px; color: #888; }
+    .done-time-label { font-size: 13px; color: #888; margin-top: 24px; margin-bottom: 4px; }
+    .done-time {
+      font-size: 48px; font-weight: 700;
+      color: #1D9E75;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 2px;
+    }
+    .done-handle { font-size: 15px; color: #555; font-weight: 700; margin-top: 8px; }
+    .done-note {
+      font-size: 13px; color: #aaa;
+      margin-top: 24px; line-height: 1.8;
+      padding-top: 20px; border-top: 1px solid #e0ddd5;
+    }
+
+    /* ===================== VER ===================== */
+    .ver-badge {
+      position: fixed; bottom: 0.8rem; right: 1rem;
+      font-size: 11px; color: #ccc;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ==================== TOP ==================== -->
+<div class="screen active" id="screen-top">
+  <div class="hero">
+    <div class="logo">ここ<span>どこ</span>？</div>
+    <p class="tagline">写真を見て、ここがどこか当てるゲームだよ</p>
+  </div>
+
+  <div class="main-card">
+    <div class="big-card">
+      <div class="big-card-icon">📍</div>
+      <div class="big-card-title">ゲームに参加する</div>
+      <div class="big-card-desc">へやコード（4ケタ）を入れてね</div>
+      <div class="code-row">
+        <input class="code-input" type="text" maxlength="1" inputmode="numeric" id="c1" autocomplete="off" />
+        <input class="code-input" type="text" maxlength="1" inputmode="numeric" id="c2" autocomplete="off" />
+        <input class="code-input" type="text" maxlength="1" inputmode="numeric" id="c3" autocomplete="off" />
+        <input class="code-input" type="text" maxlength="1" inputmode="numeric" id="c4" autocomplete="off" />
+      </div>
+      <div class="code-hint">数字4ケタを入れてね</div>
+      <div class="err" id="top-err"></div>
+      <button class="btn-green" id="go-btn" disabled onclick="joinRoom()">参加する →</button>
+    </div>
+  </div>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-text">その他</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="small-section">
+    <a class="small-card" href="upload.html">
+      <div class="small-card-icon">📤</div>
+      <div class="small-card-body">
+        <div class="small-card-title">問題を投こうする</div>
+        <div class="small-card-desc">面白い場所の写真を投こう（Googleアカウント必要）</div>
+      </div>
+      <div class="small-card-arrow">›</div>
+    </a>
+  </div>
+
+  <footer>host.html はホスト専用ページです（パスワード必要）</footer>
+</div>
+
+<!-- ==================== HANDLE ==================== -->
+<div class="screen" id="screen-handle">
+  <div class="enter-wrap">
+    <div class="logo">ここ<span>どこ</span>？</div>
+    <div class="enter-card">
+      <div class="room-badge" id="handle-room-badge">へやコード：----</div>
+      <div class="enter-title">ハンドル名を入れてね</div>
+      <div class="enter-sub">ランキングに表示される名前だよ</div>
+      <input class="handle-inp" type="text" id="handle-input" placeholder="例：とうきょうたろう" maxlength="20" autocomplete="off" />
+      <div class="err-small" id="handle-error"></div>
+      <button class="btn-green" id="start-btn" disabled onclick="startGame()">ゲームスタート →</button>
+      <button class="btn-ghost" onclick="showScreen('screen-top')">← もどる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== GAME ==================== -->
+<div class="screen" id="screen-game">
+  <div class="game-wrap">
+    <div class="timer-bar">
+      <div>
+        <div class="timer-label">けいか時間</div>
+        <div class="timer-val" id="timer-display">00:00</div>
+      </div>
+      <div class="timer-handle" id="game-handle-disp"></div>
+    </div>
+
+    <div class="img-section">
+      <div class="img-num">📷 写真 1</div>
+      <div class="img-wrap" id="wrap-0" onclick="openPhoto(0)">
+        <div class="img-placeholder">（画像ここに）</div>
+        <div class="img-zoom-hint">🔍 クリックで大きく見る</div>
+      </div>
+      <textarea class="answer" id="ans-0" placeholder="ここはどこ？（都市名・場所名など）" maxlength="100"></textarea>
+      <div class="char-hint"><span id="cnt-0">0</span> / 100文字</div>
+    </div>
+
+    <div class="img-section">
+      <div class="img-num">📷 写真 2</div>
+      <div class="img-wrap" id="wrap-1" onclick="openPhoto(1)">
+        <div class="img-placeholder">（画像ここに）</div>
+        <div class="img-zoom-hint">🔍 クリックで大きく見る</div>
+      </div>
+      <textarea class="answer" id="ans-1" placeholder="ここはどこ？（都市名・場所名など）" maxlength="100"></textarea>
+      <div class="char-hint"><span id="cnt-1">0</span> / 100文字</div>
+    </div>
+
+    <div class="img-section">
+      <div class="img-num">📷 写真 3</div>
+      <div class="img-wrap" id="wrap-2" onclick="openPhoto(2)">
+        <div class="img-placeholder">（画像ここに）</div>
+        <div class="img-zoom-hint">🔍 クリックで大きく見る</div>
+      </div>
+      <textarea class="answer" id="ans-2" placeholder="ここはどこ？（都市名・場所名など）" maxlength="100"></textarea>
+      <div class="char-hint"><span id="cnt-2">0</span> / 100文字</div>
+    </div>
+
+    <div class="submit-area">
+      <button class="btn-submit" id="submit-btn" onclick="submitAnswers()">回答を送信する</button>
+      <div class="submit-note">3つ全部書いてから送ってね</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DONE ==================== -->
+<div class="screen" id="screen-done">
+  <div class="done-wrap">
+    <div class="done-card">
+      <div class="done-icon">✅</div>
+      <div class="done-title">回答おつかれさま！</div>
+      <div class="done-sub">記録が送信されたよ</div>
+      <div class="done-time-label">あなたの記録タイム</div>
+      <div class="done-time" id="done-time-display">00:00</div>
+      <div class="done-handle" id="done-handle-disp"></div>
+      <div class="done-note">
+        1週間後に正解発表！<br>
+        結果はホームページで公開されます。<br>
+        楽しみに待っててね 🗺️
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ver-badge">ver 0.4</div>
+
+<script>
+  // ======================== Apps Script URL ========================
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxSHd68AKRiQGCDnHxPyjxcUMjVqUSAH4xeoX3QZxuf2yFUwoTjyCDmO_zdhmhL9IFK/exec';
+
+  // ======================== 状たい ========================
+  const STATE_KEY = 'kokodoko_state';
+  let state = {
+    roomId: null,
+    handle: null,
+    startTime: null,
+    images: [null, null, null],
+    submitted: false
+  };
+
+  // ======================== 画面きりかえ ========================
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  // ======================== 起動時 ========================
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(location.search);
+    const idParam = params.get('id');
+
+    const saved = localStorage.getItem(STATE_KEY);
+    if (saved) {
+      try { state = JSON.parse(saved); } catch(e) {}
+    }
+
+    if (state.submitted) {
+      showDone(false);
+      return;
+    }
+
+    if (idParam) {
+      state.roomId = idParam;
+      saveState();
+      if (state.handle && state.startTime) {
+        showScreen('screen-game');
+        setupGame();
+        resumeTimer();
+      } else {
+        showHandleScreen();
+      }
+    } else {
+      if (state.roomId && state.handle && state.startTime) {
+        showScreen('screen-game');
+        setupGame();
+        resumeTimer();
+      } else {
+        showScreen('screen-top');
+      }
+    }
+  });
+
+  // ======================== TOP: へやコド ========================
+  const codeInputs = [
+    document.getElementById('c1'),
+    document.getElementById('c2'),
+    document.getElementById('c3'),
+    document.getElementById('c4')
+  ];
+  const goBtn = document.getElementById('go-btn');
+
+  codeInputs.forEach((inp, i) => {
+    inp.addEventListener('input', () => {
+      inp.value = inp.value.replace(/[^0-9]/g, '');
+      if (inp.value && i < 3) codeInputs[i + 1].focus();
+      goBtn.disabled = codeInputs.map(x => x.value).join('').length < 4;
+      document.getElementById('top-err').textContent = '';
+    });
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !inp.value && i > 0) codeInputs[i - 1].focus();
+    });
+  });
+
+  function joinRoom() {
+    const code = codeInputs.map(x => x.value).join('');
+    if (code.length !== 4) {
+      document.getElementById('top-err').textContent = '4ケタ入れてね！';
+      return;
+    }
+    state.roomId = code;
+    saveState();
+    showHandleScreen();
+  }
+
+  // ======================== HANDLE ========================
+  function showHandleScreen() {
+    showScreen('screen-handle');
+    document.getElementById('handle-room-badge').textContent = 'へやコード：' + state.roomId;
+    const hi = document.getElementById('handle-input');
+    const sb = document.getElementById('start-btn');
+    hi.addEventListener('input', () => {
+      sb.disabled = hi.value.trim().length === 0;
+      document.getElementById('handle-error').textContent = '';
+    });
+    sb.disabled = hi.value.trim().length === 0;
+  }
+
+  function startGame() {
+    const h = document.getElementById('handle-input').value.trim();
+    if (!h) {
+      document.getElementById('handle-error').textContent = 'ハンドル名を入れてね';
+      return;
+    }
+    state.handle = h;
+    state.startTime = Date.now();
+    saveState();
+    showScreen('screen-game');
+    setupGame();
+    startTimer();
+  }
+
+  // ======================== GAME ========================
+  // テストモド用ダミしゃしん（id=TEST のときだけつかう）
+  const TEST_IMAGES = [
+    'https://picsum.photos/seed/kokodoko1/1280/720',
+    'https://picsum.photos/seed/kokodoko2/1280/720',
+    'https://picsum.photos/seed/kokodoko3/1280/720'
+  ];
+
+  function setupGame() {
+    document.getElementById('game-handle-disp').textContent = state.handle || '';
+
+    if (state.roomId === 'TEST') {
+      // テストモド：ダミしゃしんをつかう
+      const bar = document.querySelector('.timer-bar');
+      if (!document.getElementById('test-badge')) {
+        const badge = document.createElement('div');
+        badge.id = 'test-badge';
+        badge.textContent = '🧪 テストモード';
+        badge.style.cssText = 'font-size:11px;background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:6px;padding:3px 10px;margin-bottom:10px;text-align:center;';
+        bar.parentNode.insertBefore(badge, bar);
+      }
+      state.images = TEST_IMAGES;
+      setupImages();
+    } else {
+      // Apps Script から画像URLをとってくる
+      fetch(APPS_SCRIPT_URL + '?action=getRoom&roomId=' + state.roomId)
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            state.images = data.images;
+            saveState();
+          } else {
+            alert('へやがみつからないデス：' + (data.error || ''));
+          }
+          setupImages();
+        })
+        .catch(() => {
+          alert('サバとのつうしんにしっぱいしたデス');
+          setupImages();
+        });
+    }
+  }
+
+  function setupImages() {
+    for (let i = 0; i < 3; i++) {
+      const wrap = document.getElementById('wrap-' + i);
+      if (state.images[i]) {
+        wrap.innerHTML = `
+          <img src="${state.images[i]}" alt="写真${i+1}" style="width:100%;height:220px;object-fit:cover;display:block;">
+          <div class="img-zoom-hint">🔍 クリックで大きく見る</div>`;
+      }
+    }
+  }
+
+  function openPhoto(i) {
+    if (state.images[i]) window.open(state.images[i], '_blank');
+  }
+
+  // 文字数カウント
+  for (let i = 0; i < 3; i++) {
+    document.getElementById('ans-' + i).addEventListener('input', function() {
+      document.getElementById('cnt-' + i).textContent = this.value.length;
+      const answers = [0,1,2].map(j => document.getElementById('ans-' + j).value);
+      localStorage.setItem('kokodoko_ans_' + state.roomId, JSON.stringify(answers));
+    });
+  }
+
+  // ======================== TIMER ========================
+  let timerInterval = null;
+
+  function startTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimerDisplay, 1000);
+    updateTimerDisplay();
+  }
+
+  function resumeTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimerDisplay, 1000);
+    updateTimerDisplay();
+  }
+
+  function updateTimerDisplay() {
+    if (!state.startTime) return;
+    const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+    document.getElementById('timer-display').textContent = formatTime(elapsed);
+  }
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = (sec % 60).toString().padStart(2, '0');
+    return m + ':' + s;
+  }
+
+  function getElapsedSec() {
+    return Math.floor((Date.now() - state.startTime) / 1000);
+  }
+
+  // ======================== 送信 ========================
+  function submitAnswers() {
+    const answers = [0,1,2].map(i => document.getElementById('ans-' + i).value.trim());
+    const unanswered = answers.filter(a => !a).length;
+    if (unanswered > 0) {
+      if (!confirm(unanswered + 'つ空らんがあります。このまま送信しますか？')) return;
+    }
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = '送信中…';
+
+    const elapsed = getElapsedSec();
+    clearInterval(timerInterval);
+
+    const payload = { roomId: state.roomId, handle: state.handle, answers, elapsed };
+
+    // Apps Script に送信
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'submitAnswer', roomId: state.roomId, handle: state.handle, answers, elapsed })
+    })
+      .then(r => r.json())
+      .then(() => finishGame(elapsed))
+      .catch(() => finishGame(elapsed)); // しっぱいしてもかんりょうにする
+  }
+
+  function finishGame(elapsed) {
+    state.submitted = true;
+    saveState();
+    showDone(true, elapsed);
+  }
+
+  function showDone(animate, elapsed) {
+    showScreen('screen-done');
+    const sec = elapsed !== undefined ? elapsed : getElapsedSec();
+    document.getElementById('done-time-display').textContent = formatTime(sec);
+    document.getElementById('done-handle-disp').textContent = state.handle ? state.handle + ' さん' : '';
+  }
+
+  // ======================== LocalStorage ========================
+  function saveState() {
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ここどこ？ ホスト管理</title>
+  <!-- ver 0.3 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+      background: #f7f6f2;
+      min-height: 100vh;
+      color: #1a1a1a;
+    }
+
+    /* ========== LOGIN ========== */
+    #screen-login {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem;
+    }
+    .login-box {
+      background: #fff; border: 1px solid #e0ddd5;
+      border-radius: 16px; padding: 3rem 2.5rem;
+      width: 100%; max-width: 380px;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+    .login-logo { font-size: 40px; font-weight: 700; letter-spacing: -1px; color: #1a1a1a; }
+    .login-logo span { color: #1D9E75; }
+    .login-sub {
+      font-size: 12px; color: #aaa;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      margin-bottom: 2rem; margin-top: 4px;
+    }
+    input[type="password"], input[type="text"], input[type="number"] {
+      width: 100%; padding: 12px 14px;
+      font-size: 15px;
+      border: 1.5px solid #ddd; border-radius: 10px;
+      background: #f7f6f2; color: #1a1a1a;
+      outline: none; margin-bottom: 12px;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+    input:focus { border-color: #1D9E75; box-shadow: 0 0 0 3px #E1F5EE; }
+
+    .btn-green {
+      width: 100%; padding: 13px;
+      font-size: 15px; font-weight: 700;
+      background: #1D9E75; color: #fff;
+      border: none; border-radius: 10px;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-green:hover { background: #0F6E56; }
+    .btn-green:disabled { background: #ccc; cursor: not-allowed; }
+
+    .btn-ghost {
+      width: 100%; padding: 11px;
+      font-size: 13px; color: #888;
+      background: transparent;
+      border: 1px solid #e0ddd5; border-radius: 10px;
+      cursor: pointer; margin-top: 8px;
+      transition: border-color 0.15s, color 0.15s;
+      font-family: inherit;
+    }
+    .btn-ghost:hover { border-color: #1D9E75; color: #1D9E75; }
+
+    .btn-sm {
+      display: inline-block; width: auto;
+      padding: 7px 16px; font-size: 13px;
+      font-weight: 700;
+      background: #1D9E75; color: #fff;
+      border: none; border-radius: 8px;
+      cursor: pointer; transition: background 0.15s;
+      font-family: inherit;
+    }
+    .btn-sm:hover { background: #0F6E56; }
+    .btn-sm.ghost-sm {
+      background: transparent; color: #888;
+      border: 1px solid #e0ddd5;
+    }
+    .btn-sm.ghost-sm:hover { border-color: #1D9E75; color: #1D9E75; }
+    .btn-sm.danger-sm {
+      background: #fdf0f0; color: #c0392b;
+      border: 1px solid #f5c6c6;
+    }
+    .btn-sm.danger-sm:hover { background: #fde0e0; }
+
+    .err-msg { font-size: 13px; color: #c0392b; margin-top: 6px; min-height: 18px; }
+
+    /* ========== MAIN ========== */
+    #screen-main { display: none; }
+
+    .host-header {
+      background: #fff; border-bottom: 1px solid #e0ddd5;
+      padding: 1rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .host-logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+    .host-logo span { color: #1D9E75; }
+    .host-logo-sub { font-size: 11px; color: #aaa; letter-spacing: 0.15em; margin-left: 8px; }
+
+    .tabs {
+      display: flex; gap: 0;
+      border-bottom: 1px solid #e0ddd5;
+      background: #fff;
+      padding: 0 1.5rem;
+    }
+    .tab {
+      padding: 0.8rem 1.2rem;
+      font-size: 14px; font-weight: 600;
+      color: #888; cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s;
+      margin-bottom: -1px;
+    }
+    .tab:hover { color: #1a1a1a; }
+    .tab.active { color: #1D9E75; border-bottom-color: #1D9E75; }
+
+    .tab-content { display: none; padding: 1.5rem; max-width: 860px; margin: 0 auto; }
+    .tab-content.active { display: block; }
+
+    /* ========== CARDS ========== */
+    .card {
+      background: #fff; border: 1px solid #e0ddd5;
+      border-radius: 14px; padding: 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-title {
+      font-size: 12px; color: #aaa;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      margin-bottom: 1.2rem; font-weight: 700;
+    }
+
+    /* ========== ROOM SETUP ========== */
+    .room-code-big {
+      font-size: 56px; font-weight: 700;
+      letter-spacing: 0.25em; color: #1D9E75;
+      font-variant-numeric: tabular-nums;
+      text-align: center; margin: 0.8rem 0;
+    }
+    .room-url-preview {
+      text-align: center; font-size: 13px;
+      color: #aaa; margin-top: 0.8rem;
+      word-break: break-all;
+    }
+
+    .photo-slots {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem; margin-bottom: 1.2rem;
+    }
+    .photo-slot {
+      aspect-ratio: 4/3;
+      background: #f7f6f2;
+      border: 2px dashed #ddd;
+      border-radius: 10px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      cursor: pointer; transition: border-color 0.2s;
+      overflow: hidden; position: relative;
+      font-size: 13px; color: #bbb;
+    }
+    .photo-slot:hover { border-color: #1D9E75; }
+    .photo-slot.has-photo { border-style: solid; border-color: #1D9E75; }
+    .photo-slot img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+    .photo-slot-num { font-size: 11px; color: #bbb; margin-top: 6px; }
+    .remove-btn {
+      position: absolute; top: 6px; right: 6px;
+      background: rgba(255,255,255,0.9);
+      color: #c0392b;
+      border: none; border-radius: 50%;
+      width: 24px; height: 24px;
+      font-size: 12px; cursor: pointer;
+      display: none; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+    .photo-slot.has-photo .remove-btn { display: flex; }
+
+    /* ========== TABLE ========== */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      text-align: left; padding: 8px 10px;
+      color: #aaa; font-size: 11px;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      border-bottom: 1px solid #e0ddd5;
+    }
+    td { padding: 10px 10px; border-bottom: 1px solid #f0ede8; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafaf8; }
+
+    .badge {
+      display: inline-block; padding: 3px 10px;
+      border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .badge-ok { background: #E1F5EE; color: #0F6E56; }
+    .badge-ng { background: #fdf0f0; color: #c0392b; }
+    .badge-pending { background: #fef9e7; color: #b7950b; }
+
+    /* ========== UPLOAD GRID ========== */
+    .upload-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+    .upload-card {
+      background: #fff; border: 1px solid #e0ddd5;
+      border-radius: 10px; overflow: hidden;
+    }
+    .upload-card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+    .upload-card-placeholder {
+      width: 100%; aspect-ratio: 4/3;
+      background: #f0ede8;
+      display: flex; align-items: center; justify-content: center;
+      color: #bbb; font-size: 13px;
+    }
+    .upload-card-body { padding: 10px; }
+    .upload-card-meta { font-size: 11px; color: #aaa; margin-bottom: 8px; line-height: 1.6; }
+    .upload-card-actions { display: flex; gap: 6px; }
+
+    /* ========== VER ========== */
+    .ver-badge {
+      position: fixed; bottom: 0.8rem; right: 1rem;
+      font-size: 11px; color: #ccc; z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ========== LOGIN ========== -->
+<div id="screen-login">
+  <div class="login-box">
+    <div class="login-logo">ここ<span>どこ</span>？</div>
+    <div class="login-sub">HOST PANEL</div>
+    <input type="password" id="pw-input" placeholder="パスワードを入力"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn-green" onclick="doLogin()">ログイン</button>
+    <div class="err-msg" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ========== MAIN ========== -->
+<div id="screen-main">
+  <div class="host-header">
+    <div>
+      <span class="host-logo">ここ<span>どこ</span>？</span>
+      <span class="host-logo-sub">HOST PANEL</span>
+    </div>
+    <button class="btn-sm ghost-sm" onclick="doLogout()">ログアウト</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('tab-room')">🏠 へや設定</div>
+    <div class="tab" onclick="switchTab('tab-answers')">📋 回答確認</div>
+    <div class="tab" onclick="switchTab('tab-upload')">🖼️ 投こう審査</div>
+  </div>
+
+  <!-- ====== TAB: へや設定 ====== -->
+  <div class="tab-content active" id="tab-room">
+
+    <div class="card">
+      <div class="card-title">へや コード</div>
+      <div class="room-code-big" id="room-code-display">----</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn-sm" onclick="generateRoomCode()">新しいコードを発行</button>
+        <button class="btn-sm ghost-sm" onclick="copyRoomUrl()">参加URLをコピー</button>
+      </div>
+      <div class="room-url-preview" id="room-url-preview">—</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">問題の写真（3まい）</div>
+      <div class="photo-slots">
+        <div class="photo-slot" id="slot-0" onclick="clickSlot(0)">
+          <span style="font-size:22px">＋</span>
+          <div class="photo-slot-num">写真 1</div>
+          <button class="remove-btn" onclick="removePhoto(event,0)">✕</button>
+        </div>
+        <div class="photo-slot" id="slot-1" onclick="clickSlot(1)">
+          <span style="font-size:22px">＋</span>
+          <div class="photo-slot-num">写真 2</div>
+          <button class="remove-btn" onclick="removePhoto(event,1)">✕</button>
+        </div>
+        <div class="photo-slot" id="slot-2" onclick="clickSlot(2)">
+          <span style="font-size:22px">＋</span>
+          <div class="photo-slot-num">写真 3</div>
+          <button class="remove-btn" onclick="removePhoto(event,2)">✕</button>
+        </div>
+      </div>
+      <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
+      <p style="font-size:12px;color:#aaa;margin-bottom:1rem">
+        ※ ブラウザが自動圧縮してゲームに使用します。元の大きい画像はGoogleドライブにアップされます。
+      </p>
+      <button class="btn-green" onclick="publishGame()">ゲームを公開する</button>
+    </div>
+
+  </div>
+
+  <!-- ====== TAB: 回答確認 ====== -->
+  <div class="tab-content" id="tab-answers">
+
+    <div class="card" style="margin-bottom:1rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div class="card-title" style="margin:0">回答一覧</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="filter-room" placeholder="ROOM ID"
+            style="width:110px;padding:7px 10px;font-size:13px;margin:0"
+            oninput="renderAnswerTable()">
+          <button class="btn-sm ghost-sm" onclick="loadAnswers()">再読み込み</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ハンドル名</th>
+              <th>ROOM</th>
+              <th>回答1</th>
+              <th>回答2</th>
+              <th>回答3</th>
+              <th>タイム</th>
+              <th>判定</th>
+            </tr>
+          </thead>
+          <tbody id="answer-tbody">
+            <tr>
+              <td colspan="7" style="text-align:center;color:#bbb;padding:2rem">
+                （Apps Script と接続後に表示されます）
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ====== TAB: 投こう審査 ====== -->
+  <div class="tab-content" id="tab-upload">
+
+    <div class="card" style="margin-bottom:1rem">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="card-title" style="margin:0">投こう画像の審査</div>
+        <button class="btn-sm ghost-sm" onclick="loadUploads()">再読み込み</button>
+      </div>
+    </div>
+
+    <div class="upload-grid" id="upload-grid">
+      <div class="upload-card">
+        <div class="upload-card-placeholder">（画像プレビュー）</div>
+        <div class="upload-card-body">
+          <div class="upload-card-meta">投こう者: sample_user<br>2024-01-15</div>
+          <div class="upload-card-actions">
+            <button class="btn-sm" onclick="reviewUpload(0,'ok')">✅ OK</button>
+            <button class="btn-sm danger-sm" onclick="reviewUpload(0,'ng')">❌ NG</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:1rem;text-align:center;font-size:12px;color:#bbb">
+      ※ Apps Script と接続後に投こう画像が表示されます
+    </p>
+
+  </div>
+</div>
+
+<div class="ver-badge">ver 0.4</div>
+
+<script>
+  // ========== Apps Script URL ==========
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxSHd68AKRiQGCDnHxPyjxcUMjVqUSAH4xeoX3QZxuf2yFUwoTjyCDmO_zdhmhL9IFK/exec';
+
+  // ========== パスワド ==========
+  // ★ あとで Apps Script 認証に変える
+  const HOST_PASSWORD = 'kokodoko2024';
+
+  function doLogin() {
+    const pw = document.getElementById('pw-input').value;
+    if (pw === HOST_PASSWORD) {
+      document.getElementById('screen-login').style.display = 'none';
+      document.getElementById('screen-main').style.display = 'block';
+      initMain();
+    } else {
+      document.getElementById('login-error').textContent = 'パスワードがちがいます';
+    }
+  }
+
+  function doLogout() {
+    document.getElementById('screen-main').style.display = 'none';
+    document.getElementById('screen-login').style.display = 'flex';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('login-error').textContent = '';
+  }
+
+  // ========== タブ ==========
+  const TAB_IDS = ['tab-room', 'tab-answers', 'tab-upload'];
+  function switchTab(id) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.tab')[TAB_IDS.indexOf(id)].classList.add('active');
+  }
+
+  // ========== 起動 ==========
+  let currentRoomCode = null;
+  let slotFiles = [null, null, null];
+  let activeSlot = null;
+
+  function initMain() {
+    const saved = localStorage.getItem('host_roomcode');
+    if (saved) { currentRoomCode = saved; updateRoomDisplay(); }
+  }
+
+  // ========== ROOM CODE ==========
+  function generateRoomCode() {
+    if (!confirm('新しいへやコードを発行します。現在のへやは終了します。よいですか？')) return;
+    currentRoomCode = String(Math.floor(1000 + Math.random() * 9000));
+    localStorage.setItem('host_roomcode', currentRoomCode);
+    updateRoomDisplay();
+  }
+
+  function updateRoomDisplay() {
+    document.getElementById('room-code-display').textContent = currentRoomCode || '----';
+    const url = currentRoomCode
+      ? location.origin + '/index.html?id=' + currentRoomCode
+      : '—';
+    document.getElementById('room-url-preview').textContent = url;
+  }
+
+  function copyRoomUrl() {
+    if (!currentRoomCode) { alert('まずへやコードを発行してください'); return; }
+    const url = location.origin + '/index.html?id=' + currentRoomCode;
+    navigator.clipboard.writeText(url).then(() => alert('URLをコピーしました！'));
+  }
+
+  // ========== 写真スロット ==========
+  function clickSlot(i) {
+    if (slotFiles[i]) return;
+    activeSlot = i;
+    document.getElementById('file-input').click();
+  }
+
+  function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file || activeSlot === null) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const originalDataUrl = e.target.result;
+      const img = new Image();
+      img.onload = () => {
+        // かいてんじょほをExifからよみとる
+        let orientation = 1;
+        try {
+          const exifObj = piexif.load(originalDataUrl);
+          orientation = (exifObj['0th'][piexif.ImageIFD.Orientation] || 1);
+        } catch(err) { /* Exifなしでもだいじょうぶ */ }
+
+        // キャンバスにかきなおす（かいてんもただしくする）
+        const canvas = document.createElement('canvas');
+        const maxW = 1280;
+        let w = img.width, h = img.height;
+        const scale = Math.min(1, maxW / Math.max(w, h));
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+
+        // かいてんが90/270のときはたてよこいれかえ
+        if ([5,6,7,8].includes(orientation)) {
+          canvas.width = h; canvas.height = w;
+        } else {
+          canvas.width = w; canvas.height = h;
+        }
+
+        const ctx = canvas.getContext('2d');
+        // orientationにあわせてキャンバスをへんかん
+        switch (orientation) {
+          case 2: ctx.transform(-1,0,0,1,w,0); break;
+          case 3: ctx.transform(-1,0,0,-1,w,h); break;
+          case 4: ctx.transform(1,0,0,-1,0,h); break;
+          case 5: ctx.transform(0,1,1,0,0,0); break;
+          case 6: ctx.transform(0,1,-1,0,h,0); break;
+          case 7: ctx.transform(0,-1,-1,0,h,w); break;
+          case 8: ctx.transform(0,-1,1,0,0,w); break;
+        }
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // いちじょほ（GPS）だけけして、ほかのExifはのこす
+        let finalDataUrl;
+        try {
+          const exifObj = piexif.load(originalDataUrl);
+          // GPSじょほをまるごとさくじょ
+          delete exifObj['GPS'];
+          const exifStr = piexif.dump(exifObj);
+          const canvasDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          finalDataUrl = piexif.insert(exifStr, canvasDataUrl);
+        } catch(err) {
+          // Exifそうさしっぱいしたらキャンバスのままでいい
+          finalDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        }
+
+        slotFiles[activeSlot] = finalDataUrl;
+        renderSlot(activeSlot, finalDataUrl);
+        activeSlot = null;
+      };
+      img.src = originalDataUrl;
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  }
+
+  function renderSlot(i, dataUrl) {
+    const slot = document.getElementById('slot-' + i);
+    slot.classList.add('has-photo');
+    slot.innerHTML = `
+      <img src="${dataUrl}" alt="写真${i+1}">
+      <button class="remove-btn" onclick="removePhoto(event,${i})">✕</button>`;
+  }
+
+  function removePhoto(event, i) {
+    event.stopPropagation();
+    slotFiles[i] = null;
+    const slot = document.getElementById('slot-' + i);
+    slot.classList.remove('has-photo');
+    slot.innerHTML = `
+      <span style="font-size:22px">＋</span>
+      <div class="photo-slot-num">写真 ${i+1}</div>
+      <button class="remove-btn" onclick="removePhoto(event,${i})">✕</button>`;
+  }
+
+  function publishGame() {
+    if (!currentRoomCode) { alert('まずへやコードを発行してください'); return; }
+    const count = slotFiles.filter(f => f !== null).length;
+    if (count < 3) { alert('写真が' + (3 - count) + 'まい足りません'); return; }
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'publishRoom',
+        password: HOST_PASSWORD,
+        roomId: currentRoomCode,
+        images: slotFiles
+      })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) alert('ROOM ' + currentRoomCode + ' でゲームを公開しました！');
+        else alert('エラー：' + (data.error || ''));
+      })
+      .catch(() => alert('つうしんエラーデス'));
+  }
+
+  // ========== 回答テーブル ==========
+  let answersData = [];
+
+  function loadAnswers() {
+    const filterRoom = document.getElementById('filter-room').value.trim();
+    fetch(APPS_SCRIPT_URL + '?action=getAnswers&password=' + HOST_PASSWORD + (filterRoom ? '&roomId=' + filterRoom : ''))
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) { answersData = data.answers; renderAnswerTable(); }
+        else alert('エラー：' + (data.error || ''));
+      })
+      .catch(() => alert('つうしんエラーデス'));
+  }
+
+  function renderAnswerTable() {
+    const filterRoom = document.getElementById('filter-room').value.trim();
+    const filtered = filterRoom ? answersData.filter(r => String(r.roomId) === filterRoom) : answersData;
+    const tbody = document.getElementById('answer-tbody');
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#bbb;padding:2rem">データなし</td></tr>';
+      return;
+    }
+    tbody.innerHTML = filtered.map(r => `
+      <tr>
+        <td>${esc(r.handle)}</td>
+        <td>${esc(r.roomId)}</td>
+        <td>${esc(r.ans1||'—')}</td>
+        <td>${esc(r.ans2||'—')}</td>
+        <td>${esc(r.ans3||'—')}</td>
+        <td>${fmtTime(r.elapsed)}</td>
+        <td>
+          <select onchange="updateJudge(${r.rowIndex},this.value)" style="font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;background:#fff">
+            <option value="pending" ${r.judge1==='pending'?'selected':''}>未判定</option>
+            <option value="ok" ${r.judge1==='ok'?'selected':''}>✅ 正かい</option>
+            <option value="ng" ${r.judge1==='ng'?'selected':''}>❌ ふせいかい</option>
+          </select>
+        </td>
+      </tr>`).join('');
+  }
+
+  function updateJudge(rowIndex, val) {
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateJudge', password: HOST_PASSWORD, rowIndex, judge1: val })
+    })
+      .then(r => r.json())
+      .catch(() => {});
+  }
+
+  // ========== 投こう審査 ==========
+  function loadUploads() {
+    fetch(APPS_SCRIPT_URL + '?action=getUploads&password=' + HOST_PASSWORD)
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) renderUploads(data.uploads);
+        else alert('エラー：' + (data.error || ''));
+      })
+      .catch(() => alert('つうしんエラーデス'));
+  }
+
+  function renderUploads(uploads) {
+    const grid = document.getElementById('upload-grid');
+    if (!uploads.length) {
+      grid.innerHTML = '<p style="color:#bbb;font-size:13px">ペンディングのとうこうなしデス</p>';
+      return;
+    }
+    grid.innerHTML = uploads.map(u => `
+      <div class="upload-card">
+        <img src="${esc(u.imageUrl)}" alt="とうこう画ぞう" onerror="this.style.display='none'">
+        <div class="upload-card-body">
+          <div class="upload-card-meta">${esc(u.uploaderEmail)}<br>${String(u.uploadedAt).slice(0,10)}</div>
+          <div class="upload-card-actions">
+            <button class="btn-sm" onclick="reviewUpload(${u.rowIndex},'ok')">✅ OK</button>
+            <button class="btn-sm danger-sm" onclick="reviewUpload(${u.rowIndex},'ng')">❌ NG</button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  function reviewUpload(rowIndex, status) {
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'reviewUpload', password: HOST_PASSWORD, rowIndex, status })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) { alert(status.toUpperCase() + ' にしたヨ！'); loadUploads(); }
+        else alert('エラー：' + (data.error || ''));
+      })
+      .catch(() => alert('つうしんエラーデス'));
+  }
+
+  // ========== utils ==========
+  function fmtTime(sec) {
+    if (!sec && sec !== 0) return '—';
+    return Math.floor(sec/60).toString().padStart(2,'0') + ':' + (sec%60).toString().padStart(2,'0');
+  }
+  function esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
