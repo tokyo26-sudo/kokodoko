@@ -145,7 +145,7 @@
 
     /* ===================== GAME ===================== */
     #screen-game { background: #f7f6f2; }
-    .game-wrap { max-width: 620px; margin: 0 auto; padding: 1rem 1rem 3rem; }
+    .game-wrap { max-width: 680px; margin: 0 auto; padding: 1rem 1rem 3rem; }
 
     .timer-bar {
       background: #fff; border: 1px solid #e0ddd5;
@@ -175,9 +175,9 @@
       margin-bottom: 12px; cursor: zoom-in;
       background: #f0ede8;
     }
-    .img-wrap img { width: 100%; height: 220px; object-fit: contain; display: block; background: #f0ede8; }
+    .img-wrap img { width: 100%; height: 360px; object-fit: contain; display: block; background: #f0ede8; }
     .img-placeholder {
-      width: 100%; height: 220px;
+      width: 100%; height: 360px;
       display: flex; align-items: center; justify-content: center;
       color: #bbb; font-size: 14px;
     }
@@ -367,14 +367,21 @@
   <div class="done-wrap">
     <div class="done-card">
       <div class="done-icon">✅</div>
-      <div class="done-title">回答おつかれさま！</div>
-      <div class="done-sub">記録が送信されたよ</div>
-      <div class="done-time-label">あなたの記録タイム</div>
-      <div class="done-time" id="done-time-display">00:00</div>
       <div class="done-handle" id="done-handle-disp"></div>
 
+      <div style="display:flex;justify-content:center;gap:2rem;margin:1.5rem 0;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div class="done-time-label">記録タイム</div>
+          <div class="done-time" id="done-time-display">00:00</div>
+        </div>
+        <div style="text-align:center">
+          <div class="done-time-label">回答時刻</div>
+          <div style="font-size:16px;font-weight:700;color:#555;margin-top:4px" id="done-submitted-at">—</div>
+        </div>
+      </div>
+
       <!-- おたよりらん -->
-      <div style="margin-top:24px;text-align:left;border-top:1px solid #e0ddd5;padding-top:20px">
+      <div style="margin-top:8px;text-align:left;border-top:1px solid #e0ddd5;padding-top:20px">
         <div style="font-size:13px;font-weight:700;margin-bottom:6px">📝 おたより（任意）</div>
         <div style="font-size:12px;color:#888;margin-bottom:8px">どうやって解いた？ヒントは？ひとことどうぞ</div>
         <textarea id="otayori-input" placeholder="写真1はあの建物が見えたのでわかりました…など"
@@ -395,14 +402,14 @@
 
       <div class="done-note">
         1週間後に正解発表！<br>
-        結果はホームページで公開されます。<br>
-        楽しみに待っててね 🗺️
+        結果はホームページで公開されます。<br><br>
+        このウィンドウを閉じてね 👋
       </div>
     </div>
   </div>
 </div>
 
-<div class="ver-badge">ver 1.8</div>
+<div class="ver-badge">ver 1.9</div>
 
 <script>
   // ======================== Apps Script URL ========================
@@ -567,6 +574,12 @@
         document.getElementById('test-badge').after(resetBtn);
       }
     } else {
+      // よみこみちゅうスピナをひょうじ
+      for (let i = 0; i < 3; i++) {
+        const wrap = document.getElementById('wrap-' + i);
+        wrap.innerHTML = '<div style="width:100%;height:360px;display:flex;align-items:center;justify-content:center;background:#f0ede8"><span style="font-size:24px;animation:spin 1s linear infinite;display:inline-block">⏳</span></div>';
+      }
+
       // Apps Script から画像URLとしつもんぶんをとってくる
       fetch(APPS_SCRIPT_URL + '?action=getRoom&roomId=' + state.roomId)
         .then(r => r.json())
@@ -593,7 +606,7 @@
       const wrap = document.getElementById('wrap-' + i);
       if (state.images[i]) {
         wrap.innerHTML = `
-          <img src="${state.images[i]}" alt="写真${i+1}" style="width:100%;height:220px;object-fit:contain;display:block;background:#f0ede8;">
+          <img src="${state.images[i]}" alt="写真${i+1}" style="width:100%;height:360px;object-fit:contain;display:block;background:#f0ede8;">
           <div class="img-zoom-hint">🔍 クリックで大きく見る</div>`;
       }
       const ans = document.getElementById('ans-' + i);
@@ -683,12 +696,21 @@
   function showDone(animate, elapsed) {
     clearInterval(timerInterval);
     showScreen('screen-done');
-    // おくたときのじかんをひょうじ。なければLocalStorageのelapsedAtSubmitをつかう
     const sec = elapsed !== undefined && elapsed !== null
       ? elapsed
       : (state.elapsedAtSubmit || 0);
     document.getElementById('done-time-display').textContent = formatTime(sec);
     document.getElementById('done-handle-disp').textContent = state.handle ? state.handle + ' さん' : '';
+
+    // かいとうじこくをひょうじ
+    const now = new Date();
+    const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const submittedAt =
+      (jst.getUTCMonth()+1) + '/' + jst.getUTCDate() + ' ' +
+      jst.getUTCHours().toString().padStart(2,'0') + ':' +
+      jst.getUTCMinutes().toString().padStart(2,'0');
+    const el = document.getElementById('done-submitted-at');
+    if (el) el.textContent = submittedAt;
 
     // テストモドのときだけリセトボタンをかんりょう画面にだす
     if (state.roomId === 'TEST' && !document.getElementById('done-reset-btn')) {

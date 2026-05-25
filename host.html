@@ -451,7 +451,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 2.0</div>
+<div class="ver-badge">ver 2.1</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -519,6 +519,7 @@
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn-sm ghost-sm" onclick="copyUrl('${r.roomId}')">URLをコピー</button>
             ${r.status==='active' ? `<button class="btn-sm danger-sm" onclick="closeRoom('${r.roomId}')">終了</button>` : ''}
+            <button class="btn-sm" style="background:#fdf0f0;color:#c0392b;border:1px solid #f5c6c6" onclick="deleteRoom('${r.roomId}')">🗑 けす</button>
           </div>
         </div>
         <div style="font-size:11px;color:#aaa;margin-top:6px">${esc(String(r.publishedAt||''))}</div>
@@ -540,6 +541,17 @@
     navigator.clipboard.writeText(url).then(() => alert('URLをコピーしました！\n' + url));
   }
 
+  function deleteRoom(roomId) {
+    if (!confirm('ROOM ' + roomId + ' をけします。この操作はもとにもどせません。よいですか？')) return;
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteRoom', password: HOST_PASSWORD, roomId })
+    })
+      .then(r => r.json())
+      .then(data => { if (data.ok) loadRoomList(); else alert('エラー：' + data.error); })
+      .catch(() => alert('つうしんエラーデス'));
+  }
+
   function closeRoom(roomId) {
     if (!confirm('ROOM ' + roomId + ' を終了しますか？')) return;
     fetch(APPS_SCRIPT_URL, {
@@ -554,6 +566,7 @@
   function showNewRoomForm() {
     document.getElementById('new-room-form').style.display = 'block';
     generateRoomCode();
+    setupSlotDragDrop();
     window.scrollTo(0, document.getElementById('new-room-form').offsetTop - 20);
   }
 
@@ -609,9 +622,39 @@
     document.getElementById('file-input').click();
   }
 
+  // ドラグアンドドロプのイベントをせっと
+  function setupSlotDragDrop() {
+    for (let i = 0; i < 3; i++) {
+      const slot = document.getElementById('slot-' + i);
+      if (!slot) continue;
+      slot.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        slot.style.borderColor = '#1D9E75';
+        slot.style.background = '#f0faf6';
+      });
+      slot.addEventListener('dragleave', () => {
+        slot.style.borderColor = '';
+        slot.style.background = '';
+      });
+      slot.addEventListener('drop', (e) => {
+        e.preventDefault();
+        slot.style.borderColor = '';
+        slot.style.background = '';
+        if (slotFiles[i]) return;
+        const file = e.dataTransfer.files[0];
+        if (file) { activeSlot = i; processFile(file); }
+      });
+    }
+  }
+
   function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file || activeSlot === null) return;
+    processFile(file);
+    event.target.value = '';
+  }
+
+  function processFile(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const originalDataUrl = e.target.result;
@@ -673,7 +716,6 @@
       img.src = originalDataUrl;
     };
     reader.readAsDataURL(file);
-    event.target.value = '';
   }
 
   function renderSlot(i, dataUrl) {
