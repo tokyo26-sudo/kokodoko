@@ -372,11 +372,11 @@
       <div style="display:flex;justify-content:center;gap:2rem;margin:1.5rem 0;flex-wrap:wrap">
         <div style="text-align:center">
           <div class="done-time-label">記録タイム</div>
-          <div class="done-time" id="done-time-display">00:00</div>
+          <div style="font-size:2rem;font-weight:700;color:#1D9E75;font-variant-numeric:tabular-nums;letter-spacing:2px;margin-top:4px" id="done-time-display">00:00</div>
         </div>
         <div style="text-align:center">
           <div class="done-time-label">回答時刻</div>
-          <div style="font-size:16px;font-weight:700;color:#555;margin-top:4px" id="done-submitted-at">—</div>
+          <div style="font-size:2rem;font-weight:700;color:#555;margin-top:4px" id="done-submitted-at">—</div>
         </div>
       </div>
 
@@ -409,7 +409,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 1.9</div>
+<div class="ver-badge">ver 2.0</div>
 
 <script>
   // ======================== Apps Script URL ========================
@@ -702,13 +702,14 @@
     document.getElementById('done-time-display').textContent = formatTime(sec);
     document.getElementById('done-handle-disp').textContent = state.handle ? state.handle + ' さん' : '';
 
-    // かいとうじこくをひょうじ
+    // かいとうじこくをひょうじ（びょうまで）
     const now = new Date();
     const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
     const submittedAt =
       (jst.getUTCMonth()+1) + '/' + jst.getUTCDate() + ' ' +
       jst.getUTCHours().toString().padStart(2,'0') + ':' +
-      jst.getUTCMinutes().toString().padStart(2,'0');
+      jst.getUTCMinutes().toString().padStart(2,'0') + ':' +
+      jst.getUTCSeconds().toString().padStart(2,'0');
     const el = document.getElementById('done-submitted-at');
     if (el) el.textContent = submittedAt;
 
