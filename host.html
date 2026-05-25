@@ -451,7 +451,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 2.1</div>
+<div class="ver-badge">ver 2.2</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -486,6 +486,9 @@
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('.tab')[TAB_IDS.indexOf(id)].classList.add('active');
+    // タブをひらいたときじどうでよみこむ
+    if (id === 'tab-answers') loadAnswers();
+    if (id === 'tab-upload') loadUploads();
   }
 
   // ========== へやいちらん ==========
