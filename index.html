@@ -409,7 +409,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 2.1</div>
+<div class="ver-badge">ver 2.2</div>
 
 <script>
   // ======================== Apps Script URL ========================
@@ -422,6 +422,7 @@
     handle: null,
     startTime: null,
     images: [null, null, null],
+    originals: [null, null, null],
     questions: null,
     submitted: false,
     elapsedAtSubmit: null
@@ -588,6 +589,7 @@
         .then(data => {
           if (data.ok) {
             state.images = data.images;
+            state.originals = data.originals || data.images;
             state.questions = data.questions || ['ここはどこ？','ここはどこ？','ここはどこ？'];
             saveState();
           } else {
@@ -617,7 +619,8 @@
   }
 
   function openPhoto(i) {
-    if (state.images[i]) window.open(state.images[i], '_blank');
+    const url = (state.originals && state.originals[i]) ? state.originals[i] : state.images[i];
+    if (url) window.open(url, '_blank');
   }
 
   // 文字数カウント

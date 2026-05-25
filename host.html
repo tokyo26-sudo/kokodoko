@@ -451,7 +451,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 2.2</div>
+<div class="ver-badge">ver 2.3</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -668,9 +668,9 @@
         try {
           const exifObj = piexif.load(originalDataUrl);
           orientation = (exifObj['0th'][piexif.ImageIFD.Orientation] || 1);
-        } catch(err) { /* Exifなしでもだいじょうぶ */ }
+        } catch(err) {}
 
-        // キャンバスにかきなおす（かいてんもただしくする）
+        // サムネイル用：1280pxにあつしゅく
         const canvas = document.createElement('canvas');
         const maxW = 1280;
         let w = img.width, h = img.height;
@@ -678,7 +678,6 @@
         w = Math.round(w * scale);
         h = Math.round(h * scale);
 
-        // かいてんが90/270のときはたてよこいれかえ
         if ([5,6,7,8].includes(orientation)) {
           canvas.width = h; canvas.height = w;
         } else {
@@ -686,7 +685,6 @@
         }
 
         const ctx = canvas.getContext('2d');
-        // orientationにあわせてキャンバスをへんかん
         switch (orientation) {
           case 2: ctx.transform(-1,0,0,1,w,0); break;
           case 3: ctx.transform(-1,0,0,-1,w,h); break;
@@ -698,22 +696,49 @@
         }
         ctx.drawImage(img, 0, 0, w, h);
 
-        // いちじょほ（GPS）だけけして、ほかのExifはのこす
-        let finalDataUrl;
+        // サムネイル用URL（GPS除去・あつしゅく）
+        let thumbDataUrl;
         try {
           const exifObj = piexif.load(originalDataUrl);
-          // GPSじょほをまるごとさくじょ
           delete exifObj['GPS'];
           const exifStr = piexif.dump(exifObj);
-          const canvasDataUrl = canvas.toDataURL('image/jpeg', 0.82);
-          finalDataUrl = piexif.insert(exifStr, canvasDataUrl);
+          thumbDataUrl = piexif.insert(exifStr, canvas.toDataURL('image/jpeg', 0.82));
         } catch(err) {
-          // Exifそうさしっぱいしたらキャンバスのままでいい
-          finalDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          thumbDataUrl = canvas.toDataURL('image/jpeg', 0.82);
         }
 
-        slotFiles[activeSlot] = finalDataUrl;
-        renderSlot(activeSlot, finalDataUrl);
+        // オリジナル用URL（GPS除去のみ・げんかいぞう）
+        let originalNoGps;
+        try {
+          const exifObj = piexif.load(originalDataUrl);
+          delete exifObj['GPS'];
+          const exifStr = piexif.dump(exifObj);
+          // オリジナルもかいてんただしく
+          const origCanvas = document.createElement('canvas');
+          if ([5,6,7,8].includes(orientation)) {
+            origCanvas.width = img.height; origCanvas.height = img.width;
+          } else {
+            origCanvas.width = img.width; origCanvas.height = img.height;
+          }
+          const origCtx = origCanvas.getContext('2d');
+          switch (orientation) {
+            case 2: origCtx.transform(-1,0,0,1,img.width,0); break;
+            case 3: origCtx.transform(-1,0,0,-1,img.width,img.height); break;
+            case 4: origCtx.transform(1,0,0,-1,0,img.height); break;
+            case 5: origCtx.transform(0,1,1,0,0,0); break;
+            case 6: origCtx.transform(0,1,-1,0,img.height,0); break;
+            case 7: origCtx.transform(0,-1,-1,0,img.height,img.width); break;
+            case 8: origCtx.transform(0,-1,1,0,0,img.width); break;
+          }
+          origCtx.drawImage(img, 0, 0, img.width, img.height);
+          originalNoGps = piexif.insert(exifStr, origCanvas.toDataURL('image/jpeg', 1.0));
+        } catch(err) {
+          originalNoGps = originalDataUrl;
+        }
+
+        // thumb と original の両方をほぞん
+        slotFiles[activeSlot] = { thumb: thumbDataUrl, original: originalNoGps };
+        renderSlot(activeSlot, thumbDataUrl);
         activeSlot = null;
       };
       img.src = originalDataUrl;
@@ -761,7 +786,8 @@
         action: 'publishRoom',
         password: HOST_PASSWORD,
         roomId: currentRoomCode,
-        images: slotFiles,
+        images: slotFiles.map(f => f ? f.thumb : null),
+        originals: slotFiles.map(f => f ? f.original : null),
         questions
       })
     })
