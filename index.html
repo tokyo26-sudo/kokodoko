@@ -258,7 +258,7 @@
 <div class="screen active" id="screen-top">
   <div class="hero">
     <div class="logo">ここ<span>どこ</span>？</div>
-    <p class="tagline">写真を見て、ここがどこか当てるゲームだよ</p>
+    <p class="tagline">写真を見て、そこがどこか当てるゲームだよ</p>
   </div>
 
   <div class="main-card">
@@ -409,7 +409,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 2.0</div>
+<div class="ver-badge">ver 2.1</div>
 
 <script>
   // ======================== Apps Script URL ========================
@@ -481,6 +481,8 @@
 
   codeInputs.forEach((inp, i) => {
     inp.addEventListener('input', () => {
+      // ぜんかくすうじをはんかくにへんかん
+      inp.value = inp.value.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
       inp.value = inp.value.replace(/[^0-9]/g, '');
       if (inp.value && i < 3) codeInputs[i + 1].focus();
       goBtn.disabled = codeInputs.map(x => x.value).join('').length < 4;
