@@ -409,14 +409,14 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 2.3</div>
+<div class="ver-badge">ver 2.4</div>
 
 <script>
   // ======================== Apps Script URL ========================
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzYPa53eFJqz_dlsuL0sJ-atzPHsY8Ay1AgLBN5z5WNP5-J0IRQXnYZoXPGtdyVVKl1/exec';
 
   // ======================== 状たい ========================
-  const STATE_KEY = 'kokodoko_state';
+  const STATE_KEY_PREFIX = 'kokodoko_state_';
   let state = {
     roomId: null,
     handle: null,
@@ -427,6 +427,10 @@
     submitted: false,
     elapsedAtSubmit: null
   };
+
+  function getStateKey(roomId) {
+    return STATE_KEY_PREFIX + (roomId || 'unknown');
+  }
 
   // ======================== 画面きりかえ ========================
   function showScreen(id) {
@@ -440,19 +444,19 @@
     const params = new URLSearchParams(location.search);
     const idParam = params.get('id');
 
-    const saved = localStorage.getItem(STATE_KEY);
-    if (saved) {
-      try { state = JSON.parse(saved); } catch(e) {}
-    }
-
-    if (state.submitted) {
-      showDone(false, state.elapsedAtSubmit);
-      return;
-    }
-
     if (idParam) {
+      // URLにroomIdあり → そのへやのstateをよむ
+      const saved = localStorage.getItem(getStateKey(idParam));
+      if (saved) {
+        try { state = JSON.parse(saved); } catch(e) {}
+      }
       state.roomId = idParam;
-      saveState();
+
+      if (state.submitted) {
+        showDone(false, state.elapsedAtSubmit);
+        return;
+      }
+
       if (state.handle && state.startTime) {
         showScreen('screen-game');
         setupGame();
@@ -461,13 +465,8 @@
         showHandleScreen();
       }
     } else {
-      if (state.roomId && state.handle && state.startTime) {
-        showScreen('screen-game');
-        setupGame();
-        resumeTimer();
-      } else {
-        showScreen('screen-top');
-      }
+      // URLにroomIdなし → トップ
+      showScreen('screen-top');
     }
   });
 
@@ -500,7 +499,22 @@
       document.getElementById('top-err').textContent = '4ケタ入れてね！';
       return;
     }
+    // そのへやのほぞんずみstateをよむ
+    const saved = localStorage.getItem(getStateKey(code));
+    if (saved) {
+      try { state = JSON.parse(saved); } catch(e) {}
+    } else {
+      state = {
+        roomId: code, handle: null, startTime: null,
+        images: [null,null,null], originals: [null,null,null],
+        questions: null, submitted: false, elapsedAtSubmit: null
+      };
+    }
     state.roomId = code;
+    if (state.submitted) {
+      showDone(false, state.elapsedAtSubmit);
+      return;
+    }
     saveState();
     showHandleScreen();
   }
@@ -563,7 +577,7 @@
         resetBtn.textContent = '🔄 テストリセット';
         resetBtn.style.cssText = 'display:block;width:100%;margin-top:10px;padding:8px;font-size:12px;background:#fff;color:#856404;border:1px solid #ffc107;border-radius:6px;cursor:pointer;font-family:inherit;';
         resetBtn.onclick = () => {
-          localStorage.removeItem(STATE_KEY);
+          localStorage.removeItem(getStateKey(state.roomId));
           state = { roomId: 'TEST', handle: null, startTime: null, images: TEST_IMAGES, submitted: false, elapsedAtSubmit: null };
           clearInterval(timerInterval);
           const btn = document.getElementById('submit-btn');
@@ -750,7 +764,7 @@
       btn.textContent = '🔄 テストリセット';
       btn.style.cssText = 'display:block;width:100%;margin-top:20px;padding:10px;font-size:13px;background:#fff;color:#856404;border:1px solid #ffc107;border-radius:8px;cursor:pointer;font-family:inherit;';
       btn.onclick = () => {
-        localStorage.removeItem(STATE_KEY);
+        localStorage.removeItem(getStateKey(state.roomId));
         state = { roomId: 'TEST', handle: null, startTime: null, images: TEST_IMAGES, submitted: false, elapsedAtSubmit: null };
         const submitBtn = document.getElementById('submit-btn');
         if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '回答を送信する'; }
@@ -818,7 +832,7 @@
 
   // ======================== LocalStorage ========================
   function saveState() {
-    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    localStorage.setItem(getStateKey(state.roomId), JSON.stringify(state));
   }
 </script>
 </body>
