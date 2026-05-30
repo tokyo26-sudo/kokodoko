@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ — 問題を投こうする</title>
-  <!-- ver 0.5 -->
+  <!-- ver 0.6 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -154,6 +154,19 @@
     .btn-green:hover { background: #0F6E56; }
     .btn-green:disabled { background: #ccc; cursor: not-allowed; }
 
+    /* 送信中のぐるぐる */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.45);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: -3px;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     .err-msg { font-size: 13px; color: #c0392b; margin-top: 8px; min-height: 18px; }
     .success-msg {
       text-align: center;
@@ -259,7 +272,7 @@
 
 </div>
 
-<div class="ver-badge">ver 0.5</div>
+<div class="ver-badge">ver 0.6</div>
 
 <script>
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzYPa53eFJqz_dlsuL0sJ-atzPHsY8Ay1AgLBN5z5WNP5-J0IRQXnYZoXPGtdyVVKl1/exec';
@@ -408,7 +421,7 @@
 
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
-    btn.textContent = '送信中…';
+    btn.innerHTML = '<span class="spinner"></span>送信中…';
 
     fetch(APPS_SCRIPT_URL, {
       method: 'POST',
