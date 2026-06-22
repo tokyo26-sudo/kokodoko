@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 2.8 -->
+  <!-- ver 2.9 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -302,15 +302,15 @@
     }
     .geo-set-title { font-size:12px; font-weight:700; margin-bottom:8px; color:#555; }
     .geo-thumb {
-      width:100%; aspect-ratio:16/9; object-fit:cover;
-      border-radius:10px; border:1px solid #e3e2dd; margin-bottom:8px;
+      width:150px; aspect-ratio:4/3; object-fit:cover;
+      border-radius:8px; border:1px solid #e3e2dd; margin-bottom:10px;
       display:block; background:#eee;
     }
     .geo-thumb-empty {
-      width:100%; aspect-ratio:16/9; border-radius:10px;
-      border:1px dashed #d8d6cf; margin-bottom:8px;
+      width:150px; aspect-ratio:4/3; border-radius:8px;
+      border:1px dashed #d8d6cf; margin-bottom:10px;
       display:flex; align-items:center; justify-content:center;
-      color:#bbb; font-size:12px; background:#fbfbf9;
+      color:#bbb; font-size:10px; text-align:center; padding:6px; background:#fbfbf9;
     }
     .geo-map {
       width:100%; aspect-ratio:16/9; border-radius:10px; overflow:hidden;
@@ -448,7 +448,7 @@
           </div>
           <div class="geo-set" id="map-set-0">
             <div class="geo-set-title">📷 写真 1 のせってい</div>
-            <div class="geo-thumb-empty" id="geo-thumb-empty-0">写真1をえらぶとここに出るヨ</div>
+            <div class="geo-thumb-empty" id="geo-thumb-empty-0">えらぶと<br>出るヨ</div>
             <img class="geo-thumb" id="geo-thumb-0" style="display:none" alt="写真1">
             <div class="geo-map" id="geo-map-0"></div>
             <div class="geo-row">
@@ -460,7 +460,7 @@
           </div>
           <div class="geo-set" id="map-set-1">
             <div class="geo-set-title">📷 写真 2 のせってい</div>
-            <div class="geo-thumb-empty" id="geo-thumb-empty-1">写真2をえらぶとここに出るヨ</div>
+            <div class="geo-thumb-empty" id="geo-thumb-empty-1">えらぶと<br>出るヨ</div>
             <img class="geo-thumb" id="geo-thumb-1" style="display:none" alt="写真2">
             <div class="geo-map" id="geo-map-1"></div>
             <div class="geo-row">
@@ -472,7 +472,7 @@
           </div>
           <div class="geo-set" id="map-set-2">
             <div class="geo-set-title">📷 写真 3 のせってい</div>
-            <div class="geo-thumb-empty" id="geo-thumb-empty-2">写真3をえらぶとここに出るヨ</div>
+            <div class="geo-thumb-empty" id="geo-thumb-empty-2">えらぶと<br>出るヨ</div>
             <img class="geo-thumb" id="geo-thumb-2" style="display:none" alt="写真3">
             <div class="geo-map" id="geo-map-2"></div>
             <div class="geo-row">
@@ -636,7 +636,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 2.8</div>
+<div class="ver-badge">ver 2.9</div>
 
 <script>
   // ========== Apps Script URL ==========
