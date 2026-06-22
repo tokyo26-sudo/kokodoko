@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 2.7 -->
+  <!-- ver 2.8 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -301,13 +301,30 @@
       padding:12px; margin-bottom:12px; background:#fbfbf9;
     }
     .geo-set-title { font-size:12px; font-weight:700; margin-bottom:8px; color:#555; }
+    .geo-thumb {
+      width:100%; aspect-ratio:16/9; object-fit:cover;
+      border-radius:10px; border:1px solid #e3e2dd; margin-bottom:8px;
+      display:block; background:#eee;
+    }
+    .geo-thumb-empty {
+      width:100%; aspect-ratio:16/9; border-radius:10px;
+      border:1px dashed #d8d6cf; margin-bottom:8px;
+      display:flex; align-items:center; justify-content:center;
+      color:#bbb; font-size:12px; background:#fbfbf9;
+    }
     .geo-map {
-      height:240px; width:100%; border-radius:10px; overflow:hidden;
+      width:100%; aspect-ratio:16/9; border-radius:10px; overflow:hidden;
       border:1px solid #e3e2dd; margin-bottom:8px; z-index:1;
     }
     .geo-row { display:flex; align-items:center; gap:10px; font-size:12px; color:#666; }
     .geo-row input[type=range] { flex:1; accent-color:#1D9E75; }
     .geo-radius-val { font-weight:700; color:#1D9E75; min-width:64px; text-align:right; }
+    .geo-reset-btn {
+      margin-top:8px; font-size:12px; font-weight:600;
+      border:1.5px solid #e3e2dd; background:#fff; color:#666;
+      border-radius:8px; padding:7px 12px; cursor:pointer; transition:.15s;
+    }
+    .geo-reset-btn:hover { border-color:#1D9E75; color:#1D9E75; }
     .geo-hint { font-size:11px; color:#aaa; margin-top:6px; line-height:1.5; }
   </style>
 </head>
@@ -427,34 +444,43 @@
         <div id="map-settings" style="display:none;margin-bottom:1.2rem">
           <div class="geo-hint" style="margin-bottom:10px">
             写真ごとに <b>正解はんいの丸（◎中心＋半径）</b> と <b>正解の中心点（🎯・最高得点の地点）</b> をきめてネ。
-            ◎と🎯はドラッグ、半径はスライダーでグリグリうごかせるヨ。
+            ◎と🎯はドラッグ、半径はスライダーでグリグリうごかせるヨ。🎯は円の外には出ないヨ（フチで止まる）。
           </div>
           <div class="geo-set" id="map-set-0">
             <div class="geo-set-title">📷 写真 1 のせってい</div>
+            <div class="geo-thumb-empty" id="geo-thumb-empty-0">写真1をえらぶとここに出るヨ</div>
+            <img class="geo-thumb" id="geo-thumb-0" style="display:none" alt="写真1">
             <div class="geo-map" id="geo-map-0"></div>
             <div class="geo-row">
               <span>半径</span>
               <input type="range" id="geo-radius-0" min="0.2" max="100" step="0.1" value="5" oninput="onRadiusChange(0)">
               <span class="geo-radius-val" id="geo-radius-val-0">5.0 km</span>
             </div>
+            <button class="geo-reset-btn" onclick="resetScoreToCenter(0)">🎯を円の中心にもどす</button>
           </div>
           <div class="geo-set" id="map-set-1">
             <div class="geo-set-title">📷 写真 2 のせってい</div>
+            <div class="geo-thumb-empty" id="geo-thumb-empty-1">写真2をえらぶとここに出るヨ</div>
+            <img class="geo-thumb" id="geo-thumb-1" style="display:none" alt="写真2">
             <div class="geo-map" id="geo-map-1"></div>
             <div class="geo-row">
               <span>半径</span>
               <input type="range" id="geo-radius-1" min="0.2" max="100" step="0.1" value="5" oninput="onRadiusChange(1)">
               <span class="geo-radius-val" id="geo-radius-val-1">5.0 km</span>
             </div>
+            <button class="geo-reset-btn" onclick="resetScoreToCenter(1)">🎯を円の中心にもどす</button>
           </div>
           <div class="geo-set" id="map-set-2">
             <div class="geo-set-title">📷 写真 3 のせってい</div>
+            <div class="geo-thumb-empty" id="geo-thumb-empty-2">写真3をえらぶとここに出るヨ</div>
+            <img class="geo-thumb" id="geo-thumb-2" style="display:none" alt="写真3">
             <div class="geo-map" id="geo-map-2"></div>
             <div class="geo-row">
               <span>半径</span>
               <input type="range" id="geo-radius-2" min="0.2" max="100" step="0.1" value="5" oninput="onRadiusChange(2)">
               <span class="geo-radius-val" id="geo-radius-val-2">5.0 km</span>
             </div>
+            <button class="geo-reset-btn" onclick="resetScoreToCenter(2)">🎯を円の中心にもどす</button>
           </div>
         </div>
 
@@ -610,7 +636,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 2.7</div>
+<div class="ver-badge">ver 2.8</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -945,6 +971,20 @@
   const geoVals = [null, null, null];   // {lat,lng,radiusKm,scoreLat,scoreLng}
   const GEO_DEFAULT = { lat: 35.681, lng: 139.767, radiusKm: 5 }; // とうきょうえき・5km
 
+  // てんを 円の中（フチもふくむ）に おさめる。外なら いちばん近いフチへ よせる。
+  function clampToCircle(cLat, cLng, radiusKm, lat, lng) {
+    const Rm = radiusKm * 1000;
+    const latRad = cLat * Math.PI / 180;
+    const dLatM = (lat - cLat) * 111320;
+    const dLngM = (lng - cLng) * 111320 * Math.cos(latRad);
+    const dist = Math.sqrt(dLatM * dLatM + dLngM * dLngM);
+    if (dist <= Rm || dist === 0) return [lat, lng];
+    const f = Rm / dist;
+    const nLat = cLat + (dLatM * f) / 111320;
+    const nLng = cLng + (dLngM * f) / (111320 * Math.cos(latRad));
+    return [nLat, nLng];
+  }
+
   function onModeChange() {
     const sel = document.querySelector('input[name="answer-mode"]:checked').value;
     answerMode = sel;
@@ -954,12 +994,31 @@
     if (sel === 'map') {
       box.style.display = 'block';
       for (let i = 0; i < 3; i++) buildGeoMap(i);
+      syncGeoThumbs();
       // Leafletはひょうじされてないとサイズ0になるので、ひょうじごにサイズなおす
       setTimeout(() => {
         for (let i = 0; i < 3; i++) { if (geoMaps[i]) geoMaps[i].invalidateSize(); }
       }, 60);
     } else {
       box.style.display = 'none';
+    }
+  }
+
+  // えらんだ写真のサムネを 各ちずカードに うつす（写真と地図をペアで見せる）
+  function syncGeoThumbs() {
+    for (let i = 0; i < 3; i++) {
+      const img = document.getElementById('geo-thumb-' + i);
+      const empty = document.getElementById('geo-thumb-empty-' + i);
+      if (!img || !empty) continue;
+      if (slotFiles[i] && slotFiles[i].thumb) {
+        img.src = slotFiles[i].thumb;
+        img.style.display = 'block';
+        empty.style.display = 'none';
+      } else {
+        img.style.display = 'none';
+        img.removeAttribute('src');
+        empty.style.display = 'flex';
+      }
     }
   }
 
@@ -990,14 +1049,17 @@
     const scoreIcon = L.divIcon({ html: '<div style="font-size:22px;line-height:22px">🎯</div>', className: '', iconSize: [22,22], iconAnchor: [11,18] });
     const scoreMarker = L.marker([GEO_DEFAULT.lat, GEO_DEFAULT.lng], { draggable: true, icon: scoreIcon, zIndexOffset: 1000 }).addTo(map);
 
+    // 🎯は 円の中だけ。外に行こうとしたら フチで止める。
+    function setScore(lat, lng) {
+      const c = clampToCircle(geoVals[i].lat, geoVals[i].lng, geoVals[i].radiusKm, lat, lng);
+      geoVals[i].scoreLat = c[0]; geoVals[i].scoreLng = c[1];
+      scoreMarker.setLatLng(c);
+    }
     function setCenter(lat, lng) {
       geoVals[i].lat = lat; geoVals[i].lng = lng;
       centerMarker.setLatLng([lat, lng]);
       circle.setLatLng([lat, lng]);
-    }
-    function setScore(lat, lng) {
-      geoVals[i].scoreLat = lat; geoVals[i].scoreLng = lng;
-      scoreMarker.setLatLng([lat, lng]);
+      setScore(geoVals[i].scoreLat, geoVals[i].scoreLng); // 中心うごいたら🎯がはみ出てないかやりなおし
     }
 
     centerMarker.on('drag', e => { const p = e.target.getLatLng(); setCenter(p.lat, p.lng); });
@@ -1005,7 +1067,8 @@
     map.on('click', e => { setCenter(e.latlng.lat, e.latlng.lng); }); // ちずクリックでちゅうしんいどう
 
     geoMaps[i] = map;
-    geoMaps[i]._circle = circle; // 半径スライダーからつかう
+    geoMaps[i]._circle = circle;       // 半径スライダーからつかう
+    geoMaps[i]._setScore = setScore;   // フチ止め・もどすボタンからつかう
   }
 
   function onRadiusChange(i) {
@@ -1013,6 +1076,14 @@
     document.getElementById('geo-radius-val-' + i).textContent = km.toFixed(1) + ' km';
     if (geoVals[i]) geoVals[i].radiusKm = km;
     if (geoMaps[i] && geoMaps[i]._circle) geoMaps[i]._circle.setRadius(km * 1000);
+    // 半径ちぢめて🎯が外に出たら フチによせなおす
+    if (geoMaps[i] && geoMaps[i]._setScore) geoMaps[i]._setScore(geoVals[i].scoreLat, geoVals[i].scoreLng);
+  }
+
+  // 🎯を 円の中心に もどす（ボタンよう）
+  function resetScoreToCenter(i) {
+    if (!geoVals[i] || !geoMaps[i] || !geoMaps[i]._setScore) return;
+    geoMaps[i]._setScore(geoVals[i].lat, geoVals[i].lng);
   }
 
   function resetGeo() {
@@ -1023,6 +1094,10 @@
       if (slider) slider.value = 5;
       const lbl = document.getElementById('geo-radius-val-' + i);
       if (lbl) lbl.textContent = '5.0 km';
+      const img = document.getElementById('geo-thumb-' + i);
+      const empty = document.getElementById('geo-thumb-empty-' + i);
+      if (img) { img.style.display = 'none'; img.removeAttribute('src'); }
+      if (empty) empty.style.display = 'flex';
     }
     answerMode = 'text';
     const textRadio = document.querySelector('input[name="answer-mode"][value="text"]');
@@ -1208,6 +1283,7 @@
     slot.innerHTML = `
       <img src="${dataUrl}" alt="写真${i+1}">
       <button class="remove-btn" onclick="removePhoto(event,${i})">✕</button>`;
+    if (answerMode === 'map') syncGeoThumbs();
   }
 
   function removePhoto(event, i) {
@@ -1219,6 +1295,7 @@
       <span style="font-size:22px">＋</span>
       <div class="photo-slot-num">写真 ${i+1}</div>
       <button class="remove-btn" onclick="removePhoto(event,${i})">✕</button>`;
+    if (answerMode === 'map') syncGeoThumbs();
   }
 
   function publishGame() {
