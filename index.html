@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？</title>
-  <!-- ver 0.2 -->
+  <!-- ver 2.5 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -245,6 +247,11 @@
     }
 
     /* ===================== VER ===================== */
+    .pin-block { margin-top: 4px; }
+    .pin-instr { font-size: 13px; color: #0F6E56; background:#eafaf4; border:1px solid #c7ebdd; border-radius:8px; padding:8px 12px; margin-bottom:8px; }
+    .pin-map { height: 340px; width:100%; border-radius:10px; overflow:hidden; border:1px solid #e3e2dd; z-index:1; }
+    .pin-status { font-size: 12px; color:#aaa; margin-top:6px; }
+    .pin-status.set { color:#0F6E56; font-weight:700; }
     .ver-badge {
       position: fixed; bottom: 0.8rem; right: 1rem;
       font-size: 11px; color: #ccc;
@@ -333,6 +340,11 @@
       </div>
       <textarea class="answer" id="ans-0" placeholder="ここはどこ？（都市名・場所名など）" maxlength="100"></textarea>
       <div class="char-hint"><span id="cnt-0">0</span> / 100文字</div>
+      <div class="pin-block" id="pin-block-0" style="display:none">
+        <div class="pin-instr">📍 地図をクリックして、さつえい地だとおもう場所にピンをおいてネ</div>
+        <div class="pin-map" id="pin-map-0"></div>
+        <div class="pin-status" id="pin-status-0">まだピンがありません</div>
+      </div>
     </div>
 
     <div class="img-section">
@@ -343,6 +355,11 @@
       </div>
       <textarea class="answer" id="ans-1" placeholder="ここはどこ？（都市名・場所名など）" maxlength="100"></textarea>
       <div class="char-hint"><span id="cnt-1">0</span> / 100文字</div>
+      <div class="pin-block" id="pin-block-1" style="display:none">
+        <div class="pin-instr">📍 地図をクリックして、さつえい地だとおもう場所にピンをおいてネ</div>
+        <div class="pin-map" id="pin-map-1"></div>
+        <div class="pin-status" id="pin-status-1">まだピンがありません</div>
+      </div>
     </div>
 
     <div class="img-section">
@@ -353,11 +370,16 @@
       </div>
       <textarea class="answer" id="ans-2" placeholder="ここはどこ？（都市名・場所名など）" maxlength="100"></textarea>
       <div class="char-hint"><span id="cnt-2">0</span> / 100文字</div>
+      <div class="pin-block" id="pin-block-2" style="display:none">
+        <div class="pin-instr">📍 地図をクリックして、さつえい地だとおもう場所にピンをおいてネ</div>
+        <div class="pin-map" id="pin-map-2"></div>
+        <div class="pin-status" id="pin-status-2">まだピンがありません</div>
+      </div>
     </div>
 
     <div class="submit-area">
       <button class="btn-submit" id="submit-btn" onclick="submitAnswers()">回答を送信する</button>
-      <div class="submit-note">3つ全部書いてから送ってね</div>
+      <div class="submit-note" id="submit-note">3つ全部書いてから送ってね</div>
     </div>
   </div>
 </div>
@@ -409,7 +431,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 2.4</div>
+<div class="ver-badge">ver 2.5</div>
 
 <script>
   // ======================== Apps Script URL ========================
@@ -424,6 +446,7 @@
     images: [null, null, null],
     originals: [null, null, null],
     questions: null,
+    answerMode: 'text',
     submitted: false,
     elapsedAtSubmit: null
   };
@@ -604,6 +627,7 @@
             state.images = data.images;
             state.originals = data.originals || data.images;
             state.questions = data.questions || ['ここはどこ？','ここはどこ？','ここはどこ？'];
+            state.answerMode = data.answerMode || 'text';
             saveState();
           } else {
             alert('へやがみつからないデス：' + (data.error || ''));
@@ -617,10 +641,67 @@
     }
   }
 
+  // ======================== プレイヤー地図（ピン回答） ========================
+  const PLAYER_VIEW = { lat: 37.5, lng: 137.0, zoom: 5 }; // 日本ぜんたい（広め）
+  let playerMaps = [null, null, null];
+  let playerPins = [null, null, null]; // {lat,lng}
+
+  function persistPins() {
+    try { localStorage.setItem('kokodoko_pins_' + state.roomId, JSON.stringify(playerPins)); } catch(e) {}
+  }
+  function updatePinStatus(i) {
+    const el = document.getElementById('pin-status-' + i);
+    if (!el) return;
+    if (playerPins[i]) {
+      el.textContent = '📍 ピンをおいたヨ！（クリックやドラッグで動かせます）';
+      el.classList.add('set');
+    } else {
+      el.textContent = 'まだピンがありません';
+      el.classList.remove('set');
+    }
+  }
+
+  function buildPlayerMap(i) {
+    if (playerMaps[i]) { setTimeout(() => playerMaps[i].invalidateSize(), 60); updatePinStatus(i); return; }
+    const map = L.map('pin-map-' + i, { center: [PLAYER_VIEW.lat, PLAYER_VIEW.lng], zoom: PLAYER_VIEW.zoom });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    const icon = L.divIcon({ html: '<div style="font-size:30px;line-height:30px">📍</div>', className: '', iconSize: [30,30], iconAnchor: [15,29] });
+    let marker = null;
+    function setPin(lat, lng) {
+      if (!marker) {
+        marker = L.marker([lat, lng], { draggable: true, icon }).addTo(map);
+        marker.on('drag', e => { const p = e.target.getLatLng(); playerPins[i] = { lat: p.lat, lng: p.lng }; persistPins(); updatePinStatus(i); });
+      } else {
+        marker.setLatLng([lat, lng]);
+      }
+      playerPins[i] = { lat, lng };
+      persistPins();
+      updatePinStatus(i);
+    }
+    map.on('click', e => setPin(e.latlng.lat, e.latlng.lng));
+
+    // とちゅう保存していたピンを ふっかつ
+    if (playerPins[i]) setPin(playerPins[i].lat, playerPins[i].lng);
+
+    playerMaps[i] = map;
+    setTimeout(() => map.invalidateSize(), 60);
+    updatePinStatus(i);
+  }
+
   function setupImages() {
     const questions = state.questions || ['ここはどこ？（都市名・場所名など）','ここはどこ？（都市名・場所名など）','ここはどこ？（都市名・場所名など）'];
     let loadedCount = 0;
     const totalImages = state.images.filter(img => img).length;
+    const isMap = state.answerMode === 'map';
+    if (isMap) {
+      try {
+        const sp = JSON.parse(localStorage.getItem('kokodoko_pins_' + state.roomId));
+        if (Array.isArray(sp)) playerPins = sp.map(p => (p && p.lat != null) ? { lat: p.lat, lng: p.lng } : null);
+      } catch(e) {}
+    }
 
     for (let i = 0; i < 3; i++) {
       const wrap = document.getElementById('wrap-' + i);
@@ -654,7 +735,25 @@
       }
       const ans = document.getElementById('ans-' + i);
       if (ans) ans.placeholder = questions[i];
+
+      // モードで テキスト欄 か ピン地図 を きりかえ
+      const charHint = ans ? ans.nextElementSibling : null;
+      const pinBlock = document.getElementById('pin-block-' + i);
+      if (isMap) {
+        if (ans) ans.style.display = 'none';
+        if (charHint && charHint.classList && charHint.classList.contains('char-hint')) charHint.style.display = 'none';
+        if (pinBlock) pinBlock.style.display = 'block';
+        buildPlayerMap(i);
+      } else {
+        if (ans) ans.style.display = '';
+        if (charHint && charHint.classList && charHint.classList.contains('char-hint')) charHint.style.display = '';
+        if (pinBlock) pinBlock.style.display = 'none';
+      }
     }
+
+    const note = document.getElementById('submit-note');
+    if (note) note.textContent = isMap ? '3つともピンをおいてから送ってネ' : '3つ全部書いてから送ってね';
+    if (isMap) setTimeout(() => { for (let k = 0; k < 3; k++) { if (playerMaps[k]) playerMaps[k].invalidateSize(); } }, 80);
   }
 
   function openPhoto(i) {
@@ -704,10 +803,19 @@
 
   // ======================== 送信 ========================
   function submitAnswers() {
-    const answers = [0,1,2].map(i => document.getElementById('ans-' + i).value.trim());
-    const unanswered = answers.filter(a => !a).length;
-    if (unanswered > 0) {
-      if (!confirm(unanswered + 'つ空らんがあります。このまま送信しますか？')) return;
+    let answers;
+    if (state.answerMode === 'map') {
+      const missing = playerPins.filter(p => !p).length;
+      if (missing > 0) {
+        if (!confirm(missing + 'つピンがおかれていません。このまま送信しますか？')) return;
+      }
+      answers = playerPins.map(p => p ? (p.lat.toFixed(6) + ',' + p.lng.toFixed(6)) : '');
+    } else {
+      answers = [0,1,2].map(i => document.getElementById('ans-' + i).value.trim());
+      const unanswered = answers.filter(a => !a).length;
+      if (unanswered > 0) {
+        if (!confirm(unanswered + 'つ空らんがあります。このまま送信しますか？')) return;
+      }
     }
 
     const btn = document.getElementById('submit-btn');
@@ -716,8 +824,6 @@
 
     const elapsed = getElapsedSec();
     clearInterval(timerInterval);
-
-    const payload = { roomId: state.roomId, handle: state.handle, answers, elapsed };
 
     // Apps Script に送信
     fetch(APPS_SCRIPT_URL, {

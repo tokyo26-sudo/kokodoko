@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 3.2 -->
+  <!-- ver 3.3 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -681,7 +681,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 3.2</div>
+<div class="ver-badge">ver 3.3</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -792,7 +792,7 @@
     document.getElementById('edit-save-btn').textContent = 'へんしゅうをほぞんする';
 
     // いまのもんだいぶん・モード・geoをよみこむ
-    fetch(APPS_SCRIPT_URL + '?action=getRoom&roomId=' + roomId)
+    fetch(APPS_SCRIPT_URL + '?action=getRoom&roomId=' + roomId + '&password=' + encodeURIComponent(HOST_PASSWORD))
       .then(r => r.json())
       .then(data => {
         if (!data.ok) return;
