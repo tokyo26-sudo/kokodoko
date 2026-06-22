@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 2.9 -->
+  <!-- ver 3.0 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -319,8 +319,9 @@
     .geo-row { display:flex; align-items:center; gap:10px; font-size:12px; color:#666; }
     .geo-row input[type=range] { flex:1; accent-color:#1D9E75; }
     .geo-radius-val { font-weight:700; color:#1D9E75; min-width:64px; text-align:right; }
+    .geo-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .geo-reset-btn {
-      margin-top:8px; font-size:12px; font-weight:600;
+      font-size:12px; font-weight:600;
       border:1.5px solid #e3e2dd; background:#fff; color:#666;
       border-radius:8px; padding:7px 12px; cursor:pointer; transition:.15s;
     }
@@ -453,10 +454,10 @@
             <div class="geo-map" id="geo-map-0"></div>
             <div class="geo-row">
               <span>半径</span>
-              <input type="range" id="geo-radius-0" min="0.2" max="100" step="0.1" value="5" oninput="onRadiusChange(0)">
-              <span class="geo-radius-val" id="geo-radius-val-0">5.0 km</span>
+              <input type="range" id="geo-radius-0" min="0.2" max="200" step="0.1" value="50" oninput="onRadiusChange(0)">
+              <span class="geo-radius-val" id="geo-radius-val-0">50.0 km</span>
             </div>
-            <button class="geo-reset-btn" onclick="resetScoreToCenter(0)">🎯を円の中心にもどす</button>
+            <div class="geo-btns"><button class="geo-reset-btn" onclick="centerToMapView(0)">◎を地図の中央におく</button><button class="geo-reset-btn" onclick="resetScoreToCenter(0)">🎯を円の中心にもどす</button></div>
           </div>
           <div class="geo-set" id="map-set-1">
             <div class="geo-set-title">📷 写真 2 のせってい</div>
@@ -465,10 +466,10 @@
             <div class="geo-map" id="geo-map-1"></div>
             <div class="geo-row">
               <span>半径</span>
-              <input type="range" id="geo-radius-1" min="0.2" max="100" step="0.1" value="5" oninput="onRadiusChange(1)">
-              <span class="geo-radius-val" id="geo-radius-val-1">5.0 km</span>
+              <input type="range" id="geo-radius-1" min="0.2" max="200" step="0.1" value="50" oninput="onRadiusChange(1)">
+              <span class="geo-radius-val" id="geo-radius-val-1">50.0 km</span>
             </div>
-            <button class="geo-reset-btn" onclick="resetScoreToCenter(1)">🎯を円の中心にもどす</button>
+            <div class="geo-btns"><button class="geo-reset-btn" onclick="centerToMapView(1)">◎を地図の中央におく</button><button class="geo-reset-btn" onclick="resetScoreToCenter(1)">🎯を円の中心にもどす</button></div>
           </div>
           <div class="geo-set" id="map-set-2">
             <div class="geo-set-title">📷 写真 3 のせってい</div>
@@ -477,10 +478,10 @@
             <div class="geo-map" id="geo-map-2"></div>
             <div class="geo-row">
               <span>半径</span>
-              <input type="range" id="geo-radius-2" min="0.2" max="100" step="0.1" value="5" oninput="onRadiusChange(2)">
-              <span class="geo-radius-val" id="geo-radius-val-2">5.0 km</span>
+              <input type="range" id="geo-radius-2" min="0.2" max="200" step="0.1" value="50" oninput="onRadiusChange(2)">
+              <span class="geo-radius-val" id="geo-radius-val-2">50.0 km</span>
             </div>
-            <button class="geo-reset-btn" onclick="resetScoreToCenter(2)">🎯を円の中心にもどす</button>
+            <div class="geo-btns"><button class="geo-reset-btn" onclick="centerToMapView(2)">◎を地図の中央におく</button><button class="geo-reset-btn" onclick="resetScoreToCenter(2)">🎯を円の中心にもどす</button></div>
           </div>
         </div>
 
@@ -636,7 +637,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 2.9</div>
+<div class="ver-badge">ver 3.0</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -969,7 +970,7 @@
   let answerMode = 'text';
   const geoMaps = [null, null, null];   // Leaflet ちず本体
   const geoVals = [null, null, null];   // {lat,lng,radiusKm,scoreLat,scoreLng}
-  const GEO_DEFAULT = { lat: 35.681, lng: 139.767, radiusKm: 5 }; // とうきょうえき・5km
+  const GEO_DEFAULT = { lat: 35.681, lng: 139.767, radiusKm: 50 }; // とうきょうえき・半径50km
 
   // てんを 円の中（フチもふくむ）に おさめる。外なら いちばん近いフチへ よせる。
   function clampToCircle(cLat, cLng, radiusKm, lat, lng) {
@@ -1069,6 +1070,7 @@
     geoMaps[i] = map;
     geoMaps[i]._circle = circle;       // 半径スライダーからつかう
     geoMaps[i]._setScore = setScore;   // フチ止め・もどすボタンからつかう
+    geoMaps[i]._setCenter = setCenter; // 「◎を地図の中央におく」ボタンからつかう
   }
 
   function onRadiusChange(i) {
@@ -1078,6 +1080,13 @@
     if (geoMaps[i] && geoMaps[i]._circle) geoMaps[i]._circle.setRadius(km * 1000);
     // 半径ちぢめて🎯が外に出たら フチによせなおす
     if (geoMaps[i] && geoMaps[i]._setScore) geoMaps[i]._setScore(geoVals[i].scoreLat, geoVals[i].scoreLng);
+  }
+
+  // ◎ 円の中心を 地図の いま見えてる中央に うつす（ボタンよう）
+  function centerToMapView(i) {
+    if (!geoMaps[i] || !geoMaps[i]._setCenter) return;
+    const c = geoMaps[i].getCenter();
+    geoMaps[i]._setCenter(c.lat, c.lng);
   }
 
   // 🎯を 円の中心に もどす（ボタンよう）
@@ -1091,9 +1100,9 @@
       if (geoMaps[i]) { geoMaps[i].remove(); geoMaps[i] = null; }
       geoVals[i] = null;
       const slider = document.getElementById('geo-radius-' + i);
-      if (slider) slider.value = 5;
+      if (slider) slider.value = 50;
       const lbl = document.getElementById('geo-radius-val-' + i);
-      if (lbl) lbl.textContent = '5.0 km';
+      if (lbl) lbl.textContent = '50.0 km';
       const img = document.getElementById('geo-thumb-' + i);
       const empty = document.getElementById('geo-thumb-empty-' + i);
       if (img) { img.style.display = 'none'; img.removeAttribute('src'); }
