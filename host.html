@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 3.3 -->
+  <!-- ver 3.5 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -600,6 +600,11 @@
           <input type="text" id="filter-room" placeholder="ROOM ID"
             style="width:110px;padding:7px 10px;font-size:13px;margin:0"
             oninput="renderAnswers()">
+          <select id="sort-by" onchange="renderAnswers()" style="padding:7px 10px;font-size:13px;margin:0;border:1px solid #e0ddd5;border-radius:8px;font-family:inherit">
+            <option value="default">提出順</option>
+            <option value="score">スコア高い順</option>
+            <option value="time">タイム速い順</option>
+          </select>
           <!-- ひょうじきりかえスイッチ -->
           <div style="display:flex;border:1px solid #e0ddd5;border-radius:8px;overflow:hidden">
             <button id="btn-table-view" onclick="setViewMode('table')"
@@ -681,7 +686,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 3.3</div>
+<div class="ver-badge">ver 3.5</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -1568,6 +1573,30 @@
     renderAnswers();
   }
 
+  // 回答セルのひょうじ。「緯度,経度」っぽいときはGoogleマップのリンクにする。
+  function fmtAnswerCell(ans, emptyLabel) {
+    const v = (ans == null ? '' : String(ans)).trim();
+    if (!v) return emptyLabel || '（なし）';
+    if (/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(v)) {
+      const url = 'https://www.google.com/maps?q=' + encodeURIComponent(v);
+      return `<a href="${url}" target="_blank" rel="noopener" style="color:#1D9E75;font-weight:600;text-decoration:underline">📍 地図で見る</a> <span style="font-size:10px;color:#bbb">(${esc(v)})</span>`;
+    }
+    return esc(v);
+  }
+
+  // 並び替え（提出順／スコア高い順／タイム速い順）
+  function sortRows(rows) {
+    const sel = document.getElementById('sort-by');
+    const by = sel ? sel.value : 'default';
+    const arr = rows.slice();
+    if (by === 'score') {
+      arr.sort((a,b) => ((b.scoreTotal != null ? b.scoreTotal : -1) - (a.scoreTotal != null ? a.scoreTotal : -1)));
+    } else if (by === 'time') {
+      arr.sort((a,b) => ((a.elapsed != null ? a.elapsed : 999999) - (b.elapsed != null ? b.elapsed : 999999)));
+    }
+    return arr;
+  }
+
   function renderAnswers() {
     if (viewMode === 'table') renderAnswerTable();
     else renderAnswerCards();
@@ -1603,41 +1632,18 @@
       countMap[key] = (countMap[key] || 0) + 1;
     });
 
-    container.innerHTML = filtered.map(r => {
+    const sorted = sortRows(filtered);
+    container.innerHTML = sorted.map(r => {
       const isDup = countMap[r.roomId + '|' + r.handle] > 1;
-      return `
-      <div class="card" style="margin-bottom:1rem;${isDup ? 'border-left:4px solid #ffc107' : ''}">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-          <div>
-            <span style="font-size:16px;font-weight:700">${esc(r.handle)}</span>
-            ${isDup ? '<span style="font-size:11px;background:#ffc107;color:#000;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">⚠️ 重複</span>' : ''}
-            <span style="font-size:12px;color:#aaa;margin-left:10px">ROOM: ${esc(r.roomId)}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:16px">
-            <span style="font-size:13px;color:#1D9E75;font-weight:700">⏱ ${esc(fmtElapsed(r.elapsed))}</span>
-            <span style="font-size:11px;color:#aaa">${fmtDateJP(r.submittedAt)}</span>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
-          <div style="background:#f7f6f2;border-radius:8px;padding:10px">
-            <div style="font-size:10px;color:#aaa;margin-bottom:4px">📷 写真1</div>
-            <div style="font-size:14px;font-weight:600">${esc(r.ans1||'（なし）')}</div>
-          </div>
-          <div style="background:#f7f6f2;border-radius:8px;padding:10px">
-            <div style="font-size:10px;color:#aaa;margin-bottom:4px">📷 写真2</div>
-            <div style="font-size:14px;font-weight:600">${esc(r.ans2||'（なし）')}</div>
-          </div>
-          <div style="background:#f7f6f2;border-radius:8px;padding:10px">
-            <div style="font-size:10px;color:#aaa;margin-bottom:4px">📷 写真3</div>
-            <div style="font-size:14px;font-weight:600">${esc(r.ans3||'（なし）')}</div>
-          </div>
-        </div>
-        ${r.otayori ? `
-        <div style="background:#f0faf6;border:1px solid #b2e8d4;border-radius:8px;padding:10px;margin-bottom:14px">
-          <div style="font-size:10px;color:#0F6E56;margin-bottom:4px">📝 おたより</div>
-          <div style="font-size:13px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap">${esc(r.otayori)}</div>
-        </div>` : ''}
-        <div style="display:flex;align-items:center;gap:16px;border-top:1px solid #f0ede8;padding-top:12px">
+      const isMap = r.answerMode === 'map';
+      const scLine = (n) => isMap ? `<div style="font-size:12px;color:#1D9E75;font-weight:700;margin-top:4px">🎯 ${r['score'+n] != null ? r['score'+n] : 0} 点</div>` : '';
+      const judgeBlock = isMap
+        ? `<div style="display:flex;align-items:center;gap:12px;border-top:1px solid #f0ede8;padding-top:12px">
+             <span style="font-size:12px;color:#aaa">🤖 自動採点</span>
+             <span style="font-size:20px;font-weight:800;color:#1D9E75">${r.scoreTotal != null ? r.scoreTotal : 0} 点</span>
+             <span style="font-size:11px;color:#bbb">（3枚ごうけい・1枚さいだい5000点）</span>
+           </div>`
+        : `<div style="display:flex;align-items:center;gap:16px;border-top:1px solid #f0ede8;padding-top:12px">
           <span style="font-size:12px;color:#aaa">判定：</span>
           <label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px">
             <input type="radio" name="card_judge_${r.rowIndex}" value="pending" ${!r.judge1||r.judge1==='pending'?'checked':''} onchange="updateJudge(${r.rowIndex},this.value)"> 未判定
@@ -1648,7 +1654,45 @@
           <label style="font-size:13px;cursor:pointer;color:#c0392b;display:flex;align-items:center;gap:4px">
             <input type="radio" name="card_judge_${r.rowIndex}" value="ng" ${r.judge1==='ng'?'checked':''} onchange="updateJudge(${r.rowIndex},this.value)"> ❌ ふせいかい
           </label>
+        </div>`;
+      return `
+      <div class="card" style="margin-bottom:1rem;${isDup ? 'border-left:4px solid #ffc107' : ''}">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          <div>
+            <span style="font-size:16px;font-weight:700">${esc(r.handle)}</span>
+            ${isDup ? '<span style="font-size:11px;background:#ffc107;color:#000;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">⚠️ 重複</span>' : ''}
+            ${isMap ? '<span style="font-size:11px;background:#eafaf4;color:#0F6E56;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">🗺️ マップ</span>' : ''}
+            <span style="font-size:12px;color:#aaa;margin-left:10px">ROOM: ${esc(r.roomId)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px">
+            ${isMap ? `<span style="font-size:15px;color:#1D9E75;font-weight:800">🏆 ${r.scoreTotal != null ? r.scoreTotal : 0}</span>` : ''}
+            <span style="font-size:13px;color:#1D9E75;font-weight:700">⏱ ${esc(fmtElapsed(r.elapsed))}</span>
+            <span style="font-size:11px;color:#aaa">${fmtDateJP(r.submittedAt)}</span>
+          </div>
         </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+          <div style="background:#f7f6f2;border-radius:8px;padding:10px">
+            <div style="font-size:10px;color:#aaa;margin-bottom:4px">📷 写真1</div>
+            <div style="font-size:14px;font-weight:600">${fmtAnswerCell(r.ans1,'（なし）')}</div>
+            ${scLine(1)}
+          </div>
+          <div style="background:#f7f6f2;border-radius:8px;padding:10px">
+            <div style="font-size:10px;color:#aaa;margin-bottom:4px">📷 写真2</div>
+            <div style="font-size:14px;font-weight:600">${fmtAnswerCell(r.ans2,'（なし）')}</div>
+            ${scLine(2)}
+          </div>
+          <div style="background:#f7f6f2;border-radius:8px;padding:10px">
+            <div style="font-size:10px;color:#aaa;margin-bottom:4px">📷 写真3</div>
+            <div style="font-size:14px;font-weight:600">${fmtAnswerCell(r.ans3,'（なし）')}</div>
+            ${scLine(3)}
+          </div>
+        </div>
+        ${r.otayori ? `
+        <div style="background:#f0faf6;border:1px solid #b2e8d4;border-radius:8px;padding:10px;margin-bottom:14px">
+          <div style="font-size:10px;color:#0F6E56;margin-bottom:4px">📝 おたより</div>
+          <div style="font-size:13px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap">${esc(r.otayori)}</div>
+        </div>` : ''}
+        ${judgeBlock}
       </div>`;
     }).join('');
   }
@@ -1670,22 +1714,13 @@
     });
     Object.entries(countMap).forEach(([k, v]) => { if (v > 1) dupKeys.add(k); });
 
-    tbody.innerHTML = filtered.map(r => {
+    tbody.innerHTML = sortRows(filtered).map(r => {
       const isDup = dupKeys.has(r.roomId + '|' + r.handle);
-      return `
-      <tr style="${isDup ? 'background:#fff9f0' : ''}">
-        <td>${esc(r.handle)}${isDup ? ' <span style="font-size:10px;background:#ffc107;color:#000;padding:1px 6px;border-radius:10px;font-weight:700">⚠️ 重複</span>' : ''}</td>
-        <td>${esc(r.roomId)}</td>
-        <td>${esc(r.ans1||'—')}</td>
-        <td>${esc(r.ans2||'—')}</td>
-        <td>${esc(r.ans3||'—')}</td>
-        <td>${esc(fmtElapsed(r.elapsed))}</td>
-        <td style="font-size:11px;color:#aaa;white-space:nowrap">${fmtDateJP(r.submittedAt)}</td>
-        <td>
-          ${r.otayori ? `<textarea readonly style="width:100%;height:70px;font-size:12px;color:#555;border:1px solid #e0ddd5;border-radius:6px;padding:6px 8px;background:#fafaf8;resize:vertical;font-family:inherit;line-height:1.5;display:block">${esc(r.otayori)}</textarea>` : '<span style="color:#bbb">—</span>'}
-        </td>
-        <td>
-          <label style="margin-right:8px;font-size:12px;cursor:pointer">
+      const isMap = r.answerMode === 'map';
+      const sc = (n) => isMap ? ` <span style="font-size:10px;color:#1D9E75;font-weight:700">(${r['score'+n] != null ? r['score'+n] : 0})</span>` : '';
+      const judgeCell = isMap
+        ? `<span style="font-size:14px;font-weight:800;color:#1D9E75">🏆 ${r.scoreTotal != null ? r.scoreTotal : 0}</span><div style="font-size:10px;color:#bbb">自動採点</div>`
+        : `<label style="margin-right:8px;font-size:12px;cursor:pointer">
             <input type="radio" name="judge_${r.rowIndex}" value="pending" ${!r.judge1||r.judge1==='pending'?'checked':''} onchange="updateJudge(${r.rowIndex},this.value)"> 未
           </label>
           <label style="margin-right:8px;font-size:12px;cursor:pointer;color:#0F6E56">
@@ -1693,7 +1728,21 @@
           </label>
           <label style="font-size:12px;cursor:pointer;color:#c0392b">
             <input type="radio" name="judge_${r.rowIndex}" value="ng" ${r.judge1==='ng'?'checked':''} onchange="updateJudge(${r.rowIndex},this.value)"> ❌
-          </label>
+          </label>`;
+      return `
+      <tr style="${isDup ? 'background:#fff9f0' : ''}">
+        <td>${esc(r.handle)}${isDup ? ' <span style="font-size:10px;background:#ffc107;color:#000;padding:1px 6px;border-radius:10px;font-weight:700">⚠️ 重複</span>' : ''}</td>
+        <td>${esc(r.roomId)}</td>
+        <td>${fmtAnswerCell(r.ans1,'—')}${sc(1)}</td>
+        <td>${fmtAnswerCell(r.ans2,'—')}${sc(2)}</td>
+        <td>${fmtAnswerCell(r.ans3,'—')}${sc(3)}</td>
+        <td>${esc(fmtElapsed(r.elapsed))}</td>
+        <td style="font-size:11px;color:#aaa;white-space:nowrap">${fmtDateJP(r.submittedAt)}</td>
+        <td>
+          ${r.otayori ? `<textarea readonly style="width:100%;height:70px;font-size:12px;color:#555;border:1px solid #e0ddd5;border-radius:6px;padding:6px 8px;background:#fafaf8;resize:vertical;font-family:inherit;line-height:1.5;display:block">${esc(r.otayori)}</textarea>` : '<span style="color:#bbb">—</span>'}
+        </td>
+        <td>
+          ${judgeCell}
         </td>
       </tr>`;
     }).join('');
