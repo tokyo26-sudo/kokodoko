@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 3.0 -->
+  <!-- ver 3.1 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -414,7 +414,7 @@
           </div>
 
           <!-- もんだいぶん3まいぶん -->
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          <div id="q-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
             <div>
               <div style="font-size:11px;color:#aaa;margin-bottom:4px">写真1 の問題文</div>
               <input type="text" id="q-0" placeholder="例：ここはどこ？" style="font-size:13px;padding:8px 10px">
@@ -427,6 +427,10 @@
               <div style="font-size:11px;color:#aaa;margin-bottom:4px">写真3 の問題文</div>
               <input type="text" id="q-2" placeholder="例：どこの川？" style="font-size:13px;padding:8px 10px">
             </div>
+          </div>
+          <!-- マップモードのとき 問題文グリッドのかわりに出す案内 -->
+          <div id="q-map-notice" style="display:none;font-size:13px;color:#0F6E56;background:#eafaf4;border:1px solid #c7ebdd;border-radius:10px;padding:10px 14px">
+            📍 マップ回答モードです。プレイヤーには「<b>マップ上にピンをおいてください</b>」と表示され、問題文は使いません。
           </div>
         </div>
 
@@ -637,7 +641,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 3.0</div>
+<div class="ver-badge">ver 3.1</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -992,6 +996,11 @@
     document.getElementById('mode-opt-text').classList.toggle('on', sel === 'text');
     document.getElementById('mode-opt-map').classList.toggle('on', sel === 'map');
     const box = document.getElementById('map-settings');
+    // マップモードのとき 問題文グリッドを かくして 案内を だす
+    const qGrid = document.getElementById('q-grid');
+    const qNotice = document.getElementById('q-map-notice');
+    if (qGrid) qGrid.style.display = (sel === 'map') ? 'none' : 'grid';
+    if (qNotice) qNotice.style.display = (sel === 'map') ? 'block' : 'none';
     if (sel === 'map') {
       box.style.display = 'block';
       for (let i = 0; i < 3; i++) buildGeoMap(i);
@@ -1117,6 +1126,11 @@
     if (mmap) mmap.classList.remove('on');
     const box = document.getElementById('map-settings');
     if (box) box.style.display = 'none';
+    // 問題文グリッドを もどす・案内を かくす
+    const qGrid = document.getElementById('q-grid');
+    const qNotice = document.getElementById('q-map-notice');
+    if (qGrid) qGrid.style.display = 'grid';
+    if (qNotice) qNotice.style.display = 'none';
   }
 
   // ========== 起動 ==========
@@ -1316,11 +1330,14 @@
       alert('マップのせっていがまだデス。回答モードをえらびなおしてネ'); return;
     }
 
-    const questions = [
-      document.getElementById('q-0').value.trim() || 'ここはどこ？',
-      document.getElementById('q-1').value.trim() || 'ここはどこ？',
-      document.getElementById('q-2').value.trim() || 'ここはどこ？'
-    ];
+    const MAP_PROMPT = 'マップ上にピンをおいてください';
+    const questions = (answerMode === 'map')
+      ? [MAP_PROMPT, MAP_PROMPT, MAP_PROMPT]
+      : [
+          document.getElementById('q-0').value.trim() || 'ここはどこ？',
+          document.getElementById('q-1').value.trim() || 'ここはどこ？',
+          document.getElementById('q-2').value.trim() || 'ここはどこ？'
+        ];
 
     const btn = document.getElementById('publish-btn');
     btn.disabled = true;
