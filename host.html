@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 3.1 -->
+  <!-- ver 3.2 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -524,7 +524,7 @@
               <button class="remove-btn" onclick="removeEditPhoto(event,2)">✕</button>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          <div id="edit-q-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
             <div>
               <div style="font-size:11px;color:#aaa;margin-bottom:4px">写真1 の問題文</div>
               <input type="text" id="edit-q-0" placeholder="ここはどこ？" style="font-size:13px;padding:8px 10px">
@@ -536,6 +536,46 @@
             <div>
               <div style="font-size:11px;color:#aaa;margin-bottom:4px">写真3 の問題文</div>
               <input type="text" id="edit-q-2" placeholder="ここはどこ？" style="font-size:13px;padding:8px 10px">
+            </div>
+          </div>
+          <!-- マップ部屋のときの案内 -->
+          <div id="edit-q-map-notice" style="display:none;font-size:13px;color:#0F6E56;background:#eafaf4;border:1px solid #c7ebdd;border-radius:10px;padding:10px 14px">
+            📍 この部屋は <b>マップ回答モード</b>デス。下の地図で 正解の 円・半径・🎯を なおせるヨ。
+          </div>
+          <!-- マップ部屋のときの 地図エディタ -->
+          <div id="edit-map-settings" style="display:none;margin-top:1rem">
+            <div class="geo-set" id="edit-map-set-0">
+              <div class="geo-set-title">📷 写真 1 のせってい</div>
+              <img class="geo-thumb" id="edit-geo-thumb-0" style="display:none" alt="写真1">
+              <div class="geo-map" id="edit-geo-map-0"></div>
+              <div class="geo-row">
+                <span>半径</span>
+                <input type="range" id="edit-geo-radius-0" min="0.2" max="200" step="0.1" value="50" oninput="onEditRadiusChange(0)">
+                <span class="geo-radius-val" id="edit-geo-radius-val-0">50.0 km</span>
+              </div>
+              <div class="geo-btns"><button class="geo-reset-btn" onclick="editCenterToMapView(0)">◎を地図の中央におく</button><button class="geo-reset-btn" onclick="editResetScore(0)">🎯を円の中心にもどす</button></div>
+            </div>
+            <div class="geo-set" id="edit-map-set-1">
+              <div class="geo-set-title">📷 写真 2 のせってい</div>
+              <img class="geo-thumb" id="edit-geo-thumb-1" style="display:none" alt="写真2">
+              <div class="geo-map" id="edit-geo-map-1"></div>
+              <div class="geo-row">
+                <span>半径</span>
+                <input type="range" id="edit-geo-radius-1" min="0.2" max="200" step="0.1" value="50" oninput="onEditRadiusChange(1)">
+                <span class="geo-radius-val" id="edit-geo-radius-val-1">50.0 km</span>
+              </div>
+              <div class="geo-btns"><button class="geo-reset-btn" onclick="editCenterToMapView(1)">◎を地図の中央におく</button><button class="geo-reset-btn" onclick="editResetScore(1)">🎯を円の中心にもどす</button></div>
+            </div>
+            <div class="geo-set" id="edit-map-set-2">
+              <div class="geo-set-title">📷 写真 3 のせってい</div>
+              <img class="geo-thumb" id="edit-geo-thumb-2" style="display:none" alt="写真3">
+              <div class="geo-map" id="edit-geo-map-2"></div>
+              <div class="geo-row">
+                <span>半径</span>
+                <input type="range" id="edit-geo-radius-2" min="0.2" max="200" step="0.1" value="50" oninput="onEditRadiusChange(2)">
+                <span class="geo-radius-val" id="edit-geo-radius-val-2">50.0 km</span>
+              </div>
+              <div class="geo-btns"><button class="geo-reset-btn" onclick="editCenterToMapView(2)">◎を地図の中央におく</button><button class="geo-reset-btn" onclick="editResetScore(2)">🎯を円の中心にもどす</button></div>
             </div>
           </div>
         </div>
@@ -641,7 +681,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 3.1</div>
+<div class="ver-badge">ver 3.2</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -708,6 +748,7 @@
           <div>
             <span style="font-size:28px;font-weight:700;color:#1D9E75;letter-spacing:0.2em">${esc(String(r.roomId))}</span>
             <span style="font-size:12px;margin-left:10px;padding:3px 10px;border-radius:20px;background:${r.status==='active'?'#E1F5EE':'#f0ede8'};color:${r.status==='active'?'#0F6E56':'#aaa'}">${r.status==='active'?'🟢 公開中':'⚪ 終了'}</span>
+            ${r.answerMode==='map' ? `<span style="font-size:12px;margin-left:6px;padding:3px 10px;border-radius:20px;background:#eafaf4;color:#0F6E56;border:1px solid #c7ebdd">🗺️ マップ回答</span>` : ''}
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn-sm ghost-sm" onclick="copyUrl('${r.roomId}')">URLをコピー</button>
@@ -738,6 +779,9 @@
   // ========== へやへんしゅう ==========
   let editRoomId = null;
   let editSlotFiles = [null, null, null];
+  let editAnswerMode = 'text';
+  const editGeoMaps = [null, null, null];
+  const editGeoVals = [null, null, null];
   let editActiveSlot = null;
 
   function showEditForm(roomId) {
@@ -747,11 +791,42 @@
     document.getElementById('edit-save-btn').disabled = false;
     document.getElementById('edit-save-btn').textContent = 'へんしゅうをほぞんする';
 
-    // いまのもんだいぶんをよみこむ
+    // いまのもんだいぶん・モード・geoをよみこむ
     fetch(APPS_SCRIPT_URL + '?action=getRoom&roomId=' + roomId)
       .then(r => r.json())
       .then(data => {
-        if (data.ok && data.questions) {
+        if (!data.ok) return;
+        editAnswerMode = data.answerMode || 'text';
+        const qGrid = document.getElementById('edit-q-grid');
+        const qNotice = document.getElementById('edit-q-map-notice');
+        const mapBox = document.getElementById('edit-map-settings');
+        if (editAnswerMode === 'map') {
+          // マップ部屋：問題文かくして 地図エディタを ひらく
+          if (qGrid) qGrid.style.display = 'none';
+          if (qNotice) qNotice.style.display = 'block';
+          if (mapBox) mapBox.style.display = 'block';
+          const geo = data.geoData || [];
+          for (let i = 0; i < 3; i++) {
+            const g = geo[i] || {};
+            const init = {
+              lat: (g.circleLat != null) ? g.circleLat : GEO_DEFAULT.lat,
+              lng: (g.circleLng != null) ? g.circleLng : GEO_DEFAULT.lng,
+              radiusKm: (g.radius != null) ? g.radius : GEO_DEFAULT.radiusKm,
+              scoreLat: (g.scoreLat != null) ? g.scoreLat : ((g.circleLat != null) ? g.circleLat : GEO_DEFAULT.lat),
+              scoreLng: (g.scoreLng != null) ? g.scoreLng : ((g.circleLng != null) ? g.circleLng : GEO_DEFAULT.lng)
+            };
+            buildEditGeoMap(i, init);
+            // サムネ（部屋の写真URL）
+            const img = document.getElementById('edit-geo-thumb-' + i);
+            const url = [data.images[0], data.images[1], data.images[2]][i];
+            if (img && url) { img.src = url; img.style.display = 'block'; }
+          }
+          setTimeout(() => { for (let i = 0; i < 3; i++) { if (editGeoMaps[i]) editGeoMaps[i].invalidateSize(); } }, 80);
+        } else {
+          // 地名部屋：今まで通り 問題文
+          if (qGrid) qGrid.style.display = 'grid';
+          if (qNotice) qNotice.style.display = 'none';
+          if (mapBox) mapBox.style.display = 'none';
           document.getElementById('edit-q-0').value = data.questions[0] || '';
           document.getElementById('edit-q-1').value = data.questions[1] || '';
           document.getElementById('edit-q-2').value = data.questions[2] || '';
@@ -770,6 +845,7 @@
   }
 
   function hideEditForm() {
+    resetEditGeo();
     document.getElementById('edit-room-form').style.display = 'none';
     editRoomId = null;
     editSlotFiles = [null, null, null];
@@ -893,11 +969,23 @@
 
   function saveEditRoom() {
     if (!editRoomId) return;
-    const questions = [
-      document.getElementById('edit-q-0').value.trim() || 'ここはどこ？',
-      document.getElementById('edit-q-1').value.trim() || 'ここはどこ？',
-      document.getElementById('edit-q-2').value.trim() || 'ここはどこ？'
-    ];
+    const MAP_PROMPT = 'マップ上にピンをおいてください';
+    let questions, geo;
+    if (editAnswerMode === 'map') {
+      if (editGeoVals.some(g => !g)) { alert('地図のせっていがまだデス'); return; }
+      questions = [MAP_PROMPT, MAP_PROMPT, MAP_PROMPT];
+      geo = editGeoVals.map(g => ({
+        circleLat: g.lat, circleLng: g.lng, radius: g.radiusKm,
+        scoreLat: g.scoreLat, scoreLng: g.scoreLng
+      }));
+    } else {
+      questions = [
+        document.getElementById('edit-q-0').value.trim() || 'ここはどこ？',
+        document.getElementById('edit-q-1').value.trim() || 'ここはどこ？',
+        document.getElementById('edit-q-2').value.trim() || 'ここはどこ？'
+      ];
+      geo = undefined; // 地名部屋はgeoをさわらない
+    }
     const keepImages = editSlotFiles.map(f => f === null);
     const images   = editSlotFiles.map(f => f ? f.thumb    : null);
     const originals = editSlotFiles.map(f => f ? f.original : null);
@@ -906,14 +994,18 @@
     btn.disabled = true;
     btn.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite">⏳</span> ほぞん中…';
 
+    const body = {
+      action: 'updateRoom',
+      password: HOST_PASSWORD,
+      roomId: editRoomId,
+      images, originals, questions, keepImages,
+      answerMode: editAnswerMode
+    };
+    if (geo !== undefined) body.geo = geo;
+
     fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({
-        action: 'updateRoom',
-        password: HOST_PASSWORD,
-        roomId: editRoomId,
-        images, originals, questions, keepImages
-      })
+      body: JSON.stringify(body)
     })
       .then(r => r.json())
       .then(data => {
@@ -1131,6 +1223,84 @@
     const qNotice = document.getElementById('q-map-notice');
     if (qGrid) qGrid.style.display = 'grid';
     if (qNotice) qNotice.style.display = 'none';
+  }
+
+  // ========== へんしゅうフォム用 地図エディタ（新規とは べつもの） ==========
+  function buildEditGeoMap(i, init) {
+    if (editGeoMaps[i]) { editGeoMaps[i].remove(); editGeoMaps[i] = null; }
+    const map = L.map('edit-geo-map-' + i, { center: [init.lat, init.lng], zoom: 11 });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    editGeoVals[i] = {
+      lat: init.lat, lng: init.lng, radiusKm: init.radiusKm,
+      scoreLat: init.scoreLat, scoreLng: init.scoreLng
+    };
+
+    const centerIcon = L.divIcon({ html: '<div style="font-size:24px;line-height:24px">◎</div>', className: '', iconSize: [24,24], iconAnchor: [12,12] });
+    const centerMarker = L.marker([init.lat, init.lng], { draggable: true, icon: centerIcon }).addTo(map);
+    const circle = L.circle([init.lat, init.lng], {
+      radius: init.radiusKm * 1000, color: '#1D9E75', weight: 2, fillColor: '#1D9E75', fillOpacity: 0.12
+    }).addTo(map);
+    const scoreIcon = L.divIcon({ html: '<div style="font-size:22px;line-height:22px">🎯</div>', className: '', iconSize: [22,22], iconAnchor: [11,18] });
+    const scoreMarker = L.marker([init.scoreLat, init.scoreLng], { draggable: true, icon: scoreIcon, zIndexOffset: 1000 }).addTo(map);
+
+    function setScore(lat, lng) {
+      const c = clampToCircle(editGeoVals[i].lat, editGeoVals[i].lng, editGeoVals[i].radiusKm, lat, lng);
+      editGeoVals[i].scoreLat = c[0]; editGeoVals[i].scoreLng = c[1];
+      scoreMarker.setLatLng(c);
+    }
+    function setCenter(lat, lng) {
+      editGeoVals[i].lat = lat; editGeoVals[i].lng = lng;
+      centerMarker.setLatLng([lat, lng]);
+      circle.setLatLng([lat, lng]);
+      setScore(editGeoVals[i].scoreLat, editGeoVals[i].scoreLng);
+    }
+
+    centerMarker.on('drag', e => { const p = e.target.getLatLng(); setCenter(p.lat, p.lng); });
+    scoreMarker.on('drag',  e => { const p = e.target.getLatLng(); setScore(p.lat, p.lng); });
+    map.on('click', e => { setCenter(e.latlng.lat, e.latlng.lng); });
+
+    editGeoMaps[i] = map;
+    editGeoMaps[i]._circle = circle;
+    editGeoMaps[i]._setScore = setScore;
+    editGeoMaps[i]._setCenter = setCenter;
+
+    // スライダー・ラベルを よみこんだ半径に あわせる
+    const slider = document.getElementById('edit-geo-radius-' + i);
+    const lbl = document.getElementById('edit-geo-radius-val-' + i);
+    if (slider) slider.value = init.radiusKm;
+    if (lbl) lbl.textContent = init.radiusKm.toFixed(1) + ' km';
+  }
+
+  function onEditRadiusChange(i) {
+    const km = parseFloat(document.getElementById('edit-geo-radius-' + i).value);
+    document.getElementById('edit-geo-radius-val-' + i).textContent = km.toFixed(1) + ' km';
+    if (editGeoVals[i]) editGeoVals[i].radiusKm = km;
+    if (editGeoMaps[i] && editGeoMaps[i]._circle) editGeoMaps[i]._circle.setRadius(km * 1000);
+    if (editGeoMaps[i] && editGeoMaps[i]._setScore) editGeoMaps[i]._setScore(editGeoVals[i].scoreLat, editGeoVals[i].scoreLng);
+  }
+
+  function editCenterToMapView(i) {
+    if (!editGeoMaps[i] || !editGeoMaps[i]._setCenter) return;
+    const c = editGeoMaps[i].getCenter();
+    editGeoMaps[i]._setCenter(c.lat, c.lng);
+  }
+
+  function editResetScore(i) {
+    if (!editGeoVals[i] || !editGeoMaps[i] || !editGeoMaps[i]._setScore) return;
+    editGeoMaps[i]._setScore(editGeoVals[i].lat, editGeoVals[i].lng);
+  }
+
+  function resetEditGeo() {
+    for (let i = 0; i < 3; i++) {
+      if (editGeoMaps[i]) { editGeoMaps[i].remove(); editGeoMaps[i] = null; }
+      editGeoVals[i] = null;
+      const img = document.getElementById('edit-geo-thumb-' + i);
+      if (img) { img.style.display = 'none'; img.removeAttribute('src'); }
+    }
+    editAnswerMode = 'text';
   }
 
   // ========== 起動 ==========
