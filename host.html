@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 3.6 -->
+  <!-- ver 3.7 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -319,6 +319,11 @@
     .geo-row { display:flex; align-items:center; gap:10px; font-size:12px; color:#666; }
     .geo-row input[type=range] { flex:1; accent-color:#1D9E75; }
     .geo-radius-val { font-weight:700; color:#1D9E75; min-width:64px; text-align:right; }
+    .geo-radius-num {
+      width:74px; padding:5px 6px; border:1.5px solid #e3e2dd; border-radius:8px;
+      font-size:12px; font-weight:700; color:#1D9E75; text-align:right; background:#fff;
+    }
+    .geo-radius-num:focus { outline:none; border-color:#1D9E75; }
     .geo-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .geo-reset-btn {
       font-size:12px; font-weight:600;
@@ -479,8 +484,9 @@
             <div class="geo-map" id="geo-map-0"></div>
             <div class="geo-row">
               <span>半径</span>
-              <input type="range" id="geo-radius-0" min="0.2" max="200" step="0.1" value="50" oninput="onRadiusChange(0)">
-              <span class="geo-radius-val" id="geo-radius-val-0">50.0 km</span>
+              <input type="range" id="geo-radius-0" min="0" max="1000" step="1" value="489" oninput="onRadiusChange(0)" onchange="onRadiusCommit(0)">
+              <input type="number" id="geo-radius-num-0" class="geo-radius-num" min="1" max="3000" step="0.1" value="50" oninput="onRadiusNumChange(0)" onchange="onRadiusCommit(0)">
+              <span style="font-size:11px;color:#999">km</span>
             </div>
             <div class="geo-btns"><button class="geo-reset-btn" onclick="centerToMapView(0)">◎を地図の中央におく</button><button class="geo-reset-btn" onclick="resetScoreToCenter(0)">🎯を円の中心にもどす</button></div>
           </div>
@@ -491,8 +497,9 @@
             <div class="geo-map" id="geo-map-1"></div>
             <div class="geo-row">
               <span>半径</span>
-              <input type="range" id="geo-radius-1" min="0.2" max="200" step="0.1" value="50" oninput="onRadiusChange(1)">
-              <span class="geo-radius-val" id="geo-radius-val-1">50.0 km</span>
+              <input type="range" id="geo-radius-1" min="0" max="1000" step="1" value="489" oninput="onRadiusChange(1)" onchange="onRadiusCommit(1)">
+              <input type="number" id="geo-radius-num-1" class="geo-radius-num" min="1" max="3000" step="0.1" value="50" oninput="onRadiusNumChange(1)" onchange="onRadiusCommit(1)">
+              <span style="font-size:11px;color:#999">km</span>
             </div>
             <div class="geo-btns"><button class="geo-reset-btn" onclick="centerToMapView(1)">◎を地図の中央におく</button><button class="geo-reset-btn" onclick="resetScoreToCenter(1)">🎯を円の中心にもどす</button></div>
           </div>
@@ -503,8 +510,9 @@
             <div class="geo-map" id="geo-map-2"></div>
             <div class="geo-row">
               <span>半径</span>
-              <input type="range" id="geo-radius-2" min="0.2" max="200" step="0.1" value="50" oninput="onRadiusChange(2)">
-              <span class="geo-radius-val" id="geo-radius-val-2">50.0 km</span>
+              <input type="range" id="geo-radius-2" min="0" max="1000" step="1" value="489" oninput="onRadiusChange(2)" onchange="onRadiusCommit(2)">
+              <input type="number" id="geo-radius-num-2" class="geo-radius-num" min="1" max="3000" step="0.1" value="50" oninput="onRadiusNumChange(2)" onchange="onRadiusCommit(2)">
+              <span style="font-size:11px;color:#999">km</span>
             </div>
             <div class="geo-btns"><button class="geo-reset-btn" onclick="centerToMapView(2)">◎を地図の中央におく</button><button class="geo-reset-btn" onclick="resetScoreToCenter(2)">🎯を円の中心にもどす</button></div>
           </div>
@@ -592,8 +600,9 @@
               <div class="geo-map" id="edit-geo-map-0"></div>
               <div class="geo-row">
                 <span>半径</span>
-                <input type="range" id="edit-geo-radius-0" min="0.2" max="200" step="0.1" value="50" oninput="onEditRadiusChange(0)">
-                <span class="geo-radius-val" id="edit-geo-radius-val-0">50.0 km</span>
+                <input type="range" id="edit-geo-radius-0" min="0" max="1000" step="1" value="489" oninput="onEditRadiusChange(0)" onchange="onEditRadiusCommit(0)">
+                <input type="number" id="edit-geo-radius-num-0" class="geo-radius-num" min="1" max="3000" step="0.1" value="50" oninput="onEditRadiusNumChange(0)" onchange="onEditRadiusCommit(0)">
+                <span style="font-size:11px;color:#999">km</span>
               </div>
               <div class="geo-btns"><button class="geo-reset-btn" onclick="editCenterToMapView(0)">◎を地図の中央におく</button><button class="geo-reset-btn" onclick="editResetScore(0)">🎯を円の中心にもどす</button></div>
             </div>
@@ -603,8 +612,9 @@
               <div class="geo-map" id="edit-geo-map-1"></div>
               <div class="geo-row">
                 <span>半径</span>
-                <input type="range" id="edit-geo-radius-1" min="0.2" max="200" step="0.1" value="50" oninput="onEditRadiusChange(1)">
-                <span class="geo-radius-val" id="edit-geo-radius-val-1">50.0 km</span>
+                <input type="range" id="edit-geo-radius-1" min="0" max="1000" step="1" value="489" oninput="onEditRadiusChange(1)" onchange="onEditRadiusCommit(1)">
+                <input type="number" id="edit-geo-radius-num-1" class="geo-radius-num" min="1" max="3000" step="0.1" value="50" oninput="onEditRadiusNumChange(1)" onchange="onEditRadiusCommit(1)">
+                <span style="font-size:11px;color:#999">km</span>
               </div>
               <div class="geo-btns"><button class="geo-reset-btn" onclick="editCenterToMapView(1)">◎を地図の中央におく</button><button class="geo-reset-btn" onclick="editResetScore(1)">🎯を円の中心にもどす</button></div>
             </div>
@@ -614,8 +624,9 @@
               <div class="geo-map" id="edit-geo-map-2"></div>
               <div class="geo-row">
                 <span>半径</span>
-                <input type="range" id="edit-geo-radius-2" min="0.2" max="200" step="0.1" value="50" oninput="onEditRadiusChange(2)">
-                <span class="geo-radius-val" id="edit-geo-radius-val-2">50.0 km</span>
+                <input type="range" id="edit-geo-radius-2" min="0" max="1000" step="1" value="489" oninput="onEditRadiusChange(2)" onchange="onEditRadiusCommit(2)">
+                <input type="number" id="edit-geo-radius-num-2" class="geo-radius-num" min="1" max="3000" step="0.1" value="50" oninput="onEditRadiusNumChange(2)" onchange="onEditRadiusCommit(2)">
+                <span style="font-size:11px;color:#999">km</span>
               </div>
               <div class="geo-btns"><button class="geo-reset-btn" onclick="editCenterToMapView(2)">◎を地図の中央におく</button><button class="geo-reset-btn" onclick="editResetScore(2)">🎯を円の中心にもどす</button></div>
             </div>
@@ -728,7 +739,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 3.6</div>
+<div class="ver-badge">ver 3.7</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -1128,6 +1139,42 @@
   const geoVals = [null, null, null];   // {lat,lng,radiusKm,scoreLat,scoreLng}
   const GEO_DEFAULT = { lat: 35.681, lng: 139.767, radiusKm: 50 }; // とうきょうえき・半径50km
 
+  // ========== 半径ログスライダー（フェーズD）==========
+  // ツマミ位置(0〜1000) ⇔ 半径(1km〜3000km) を「倍率」でむすぶ。
+  const RADIUS_MIN_KM = 1, RADIUS_MAX_KM = 3000, RADIUS_STEPS = 1000;
+  function radiusPosToKm(pos) {
+    const p = Math.min(RADIUS_STEPS, Math.max(0, pos));
+    return RADIUS_MIN_KM * Math.pow(RADIUS_MAX_KM / RADIUS_MIN_KM, p / RADIUS_STEPS);
+  }
+  function radiusKmToPos(km) {
+    const k = Math.min(RADIUS_MAX_KM, Math.max(RADIUS_MIN_KM, km));
+    return Math.round(RADIUS_STEPS * Math.log(k / RADIUS_MIN_KM) / Math.log(RADIUS_MAX_KM / RADIUS_MIN_KM));
+  }
+  // 数字ボックスにいれる見た目（小さいときだけ小数。コンマはつけない＝type=numberのため）
+  function fmtRadiusInput(km) { return (km < 10) ? Number(km.toFixed(1)) : Math.round(km); }
+
+  // 半径をきめる共通しょり（新規・編集どちらもつかう）
+  // syncSlider=true … km から ツマミ位置を合わせる（手入力のとき）
+  function applyRadiusGeneric(i, km, syncSlider, prefix, vals, maps) {
+    km = Math.min(RADIUS_MAX_KM, Math.max(RADIUS_MIN_KM, km));
+    if (vals[i]) vals[i].radiusKm = km;
+    const s = document.getElementById(prefix + 'radius-' + i);
+    if (syncSlider && s) s.value = radiusKmToPos(km);
+    const num = document.getElementById(prefix + 'radius-num-' + i);
+    if (num && document.activeElement !== num) num.value = fmtRadiusInput(km); // 入力中はじゃましない
+    if (maps[i] && maps[i]._circle) maps[i]._circle.setRadius(km * 1000);
+    if (maps[i] && maps[i]._setScore && vals[i]) maps[i]._setScore(vals[i].scoreLat, vals[i].scoreLng);
+  }
+  // ツマミ／数字を はなしたとき（commit）：表示をそろえて、円ぜんたいが見えるよう地図をフィット
+  function radiusCommitGeneric(i, prefix, vals, maps) {
+    if (!vals[i]) return;
+    const km = vals[i].radiusKm;
+    const s = document.getElementById(prefix + 'radius-' + i);   if (s) s.value = radiusKmToPos(km);
+    const num = document.getElementById(prefix + 'radius-num-' + i); if (num) num.value = fmtRadiusInput(km);
+    const m = maps[i];
+    if (m && m._circle) { try { m.fitBounds(m._circle.getBounds(), { padding: [24, 24] }); } catch(e) {} }
+  }
+
   // てんを 円の中（フチもふくむ）に おさめる。外なら いちばん近いフチへ よせる。
   function clampToCircle(cLat, cLng, radiusKm, lat, lng) {
     const Rm = radiusKm * 1000;
@@ -1274,13 +1321,14 @@
   }
 
   function onRadiusChange(i) {
-    const km = parseFloat(document.getElementById('geo-radius-' + i).value);
-    document.getElementById('geo-radius-val-' + i).textContent = km.toFixed(1) + ' km';
-    if (geoVals[i]) geoVals[i].radiusKm = km;
-    if (geoMaps[i] && geoMaps[i]._circle) geoMaps[i]._circle.setRadius(km * 1000);
-    // 半径ちぢめて🎯が外に出たら フチによせなおす
-    if (geoMaps[i] && geoMaps[i]._setScore) geoMaps[i]._setScore(geoVals[i].scoreLat, geoVals[i].scoreLng);
+    const pos = parseFloat(document.getElementById('geo-radius-' + i).value);
+    applyRadiusGeneric(i, radiusPosToKm(pos), false, 'geo-', geoVals, geoMaps);
   }
+  function onRadiusNumChange(i) {
+    const v = parseFloat(document.getElementById('geo-radius-num-' + i).value);
+    if (!isNaN(v)) applyRadiusGeneric(i, v, true, 'geo-', geoVals, geoMaps);
+  }
+  function onRadiusCommit(i) { radiusCommitGeneric(i, 'geo-', geoVals, geoMaps); }
 
   // ◎ 円の中心を 地図の いま見えてる中央に うつす（ボタンよう）
   function centerToMapView(i) {
@@ -1300,9 +1348,9 @@
       if (geoMaps[i]) { geoMaps[i].remove(); geoMaps[i] = null; }
       geoVals[i] = null;
       const slider = document.getElementById('geo-radius-' + i);
-      if (slider) slider.value = 50;
-      const lbl = document.getElementById('geo-radius-val-' + i);
-      if (lbl) lbl.textContent = '50.0 km';
+      if (slider) slider.value = radiusKmToPos(50);
+      const num = document.getElementById('geo-radius-num-' + i);
+      if (num) num.value = 50;
       const img = document.getElementById('geo-thumb-' + i);
       const empty = document.getElementById('geo-thumb-empty-' + i);
       if (img) { img.style.display = 'none'; img.removeAttribute('src'); }
@@ -1366,20 +1414,22 @@
     editGeoMaps[i]._setScore = setScore;
     editGeoMaps[i]._setCenter = setCenter;
 
-    // スライダー・ラベルを よみこんだ半径に あわせる
+    // スライダー・数字ボックスを よみこんだ半径に あわせる
     const slider = document.getElementById('edit-geo-radius-' + i);
-    const lbl = document.getElementById('edit-geo-radius-val-' + i);
-    if (slider) slider.value = init.radiusKm;
-    if (lbl) lbl.textContent = init.radiusKm.toFixed(1) + ' km';
+    const num = document.getElementById('edit-geo-radius-num-' + i);
+    if (slider) slider.value = radiusKmToPos(init.radiusKm);
+    if (num) num.value = fmtRadiusInput(init.radiusKm);
   }
 
   function onEditRadiusChange(i) {
-    const km = parseFloat(document.getElementById('edit-geo-radius-' + i).value);
-    document.getElementById('edit-geo-radius-val-' + i).textContent = km.toFixed(1) + ' km';
-    if (editGeoVals[i]) editGeoVals[i].radiusKm = km;
-    if (editGeoMaps[i] && editGeoMaps[i]._circle) editGeoMaps[i]._circle.setRadius(km * 1000);
-    if (editGeoMaps[i] && editGeoMaps[i]._setScore) editGeoMaps[i]._setScore(editGeoVals[i].scoreLat, editGeoVals[i].scoreLng);
+    const pos = parseFloat(document.getElementById('edit-geo-radius-' + i).value);
+    applyRadiusGeneric(i, radiusPosToKm(pos), false, 'edit-geo-', editGeoVals, editGeoMaps);
   }
+  function onEditRadiusNumChange(i) {
+    const v = parseFloat(document.getElementById('edit-geo-radius-num-' + i).value);
+    if (!isNaN(v)) applyRadiusGeneric(i, v, true, 'edit-geo-', editGeoVals, editGeoMaps);
+  }
+  function onEditRadiusCommit(i) { radiusCommitGeneric(i, 'edit-geo-', editGeoVals, editGeoMaps); }
 
   function editCenterToMapView(i) {
     if (!editGeoMaps[i] || !editGeoMaps[i]._setCenter) return;
