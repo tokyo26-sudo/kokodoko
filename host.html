@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 3.9 -->
+  <!-- ver 4.0 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -180,6 +180,14 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.15);
     }
     .photo-slot.has-photo .remove-btn { display: flex; }
+    /* ver4.0：編集時の元画像プレビュー */
+    .photo-slot.is-original img { opacity: .72; }
+    .slot-change-hint {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      background: rgba(29,158,117,.92); color: #fff;
+      font-size: 11px; font-weight: 700; text-align: center;
+      padding: 4px 0; letter-spacing: .04em; pointer-events: none;
+    }
 
     /* ========== TABLE ========== */
     .table-wrap { overflow-x: auto; }
@@ -741,7 +749,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 3.9</div>
+<div class="ver-badge">ver 4.0</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -839,6 +847,7 @@
   // ========== へやへんしゅう ==========
   let editRoomId = null;
   let editSlotFiles = [null, null, null];
+  let editOriginalUrls = [null, null, null]; // ver4.0：いまの写真URL（プレビュー用）
   let editAnswerMode = 'text';
   const editGeoMaps = [null, null, null];
   const editGeoVals = [null, null, null];
@@ -847,6 +856,7 @@
   function showEditForm(roomId) {
     editRoomId = roomId;
     editSlotFiles = [null, null, null];
+    editOriginalUrls = [null, null, null];
     document.getElementById('edit-room-id').textContent = roomId;
     document.getElementById('edit-save-btn').disabled = false;
     document.getElementById('edit-save-btn').textContent = 'へんしゅうをほぞんする';
@@ -857,6 +867,10 @@
       .then(data => {
         if (!data.ok) return;
         editAnswerMode = data.answerMode || 'text';
+        // ver4.0：いまの写真URLをスロットに元画像プレビューとして出す
+        const imgs = data.images || [];
+        editOriginalUrls = [imgs[0] || null, imgs[1] || null, imgs[2] || null];
+        for (let i = 0; i < 3; i++) resetEditSlot(i);
         const qGrid = document.getElementById('edit-q-grid');
         const qNotice = document.getElementById('edit-q-map-notice');
         const mapBox = document.getElementById('edit-map-settings');
@@ -921,11 +935,19 @@
   function resetEditSlot(i) {
     const slot = document.getElementById('edit-slot-' + i);
     if (!slot) return;
-    slot.classList.remove('has-photo');
-    slot.innerHTML = `
-      <span style="font-size:22px">＋</span>
-      <div class="photo-slot-num">写真 ${i+1}（そのまま）</div>
-      <button class="remove-btn" onclick="removeEditPhoto(event,${i})">✕</button>`;
+    slot.classList.remove('has-photo', 'is-original');
+    const url = editOriginalUrls[i];
+    if (url) {
+      // いまの写真をうっすら出す。おすと差しかえ。
+      slot.classList.add('has-photo', 'is-original');
+      slot.innerHTML = `
+        <img src="${url}" alt="写真${i+1}">
+        <div class="slot-change-hint">おして かえる</div>`;
+    } else {
+      slot.innerHTML = `
+        <span style="font-size:22px">＋</span>
+        <div class="photo-slot-num">写真 ${i+1}（そのまま）</div>`;
+    }
   }
 
   function clickEditSlot(i) {
