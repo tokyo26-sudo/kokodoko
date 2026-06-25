@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 4.0 -->
+  <!-- ver 4.1 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -188,6 +188,23 @@
       font-size: 11px; font-weight: 700; text-align: center;
       padding: 4px 0; letter-spacing: .04em; pointer-events: none;
     }
+    /* ver4.1：点数ヒートマップのトグル＆凡例 */
+    .heat-toggle-btn {
+      background: #fff; border: 1.5px solid #1D9E75; color: #0F6E56;
+      font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 8px;
+      cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.18);
+    }
+    .heat-toggle-btn.on { background: #1D9E75; color: #fff; }
+    .heat-legend {
+      background: #fff; padding: 8px 10px; border-radius: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.15); font-size: 11px; color: #555; line-height: 1.4;
+    }
+    .heat-legend .lt { font-weight: 700; color: #333; margin-bottom: 5px; }
+    .heat-legend .bar {
+      width: 120px; height: 11px; border-radius: 4px; margin-bottom: 3px;
+      background: linear-gradient(to right, rgb(224,67,42), rgb(240,140,0), rgb(245,205,0), rgb(150,200,60), rgb(29,158,117));
+    }
+    .heat-legend .ticks { display: flex; justify-content: space-between; font-size: 10px; color: #999; }
 
     /* ========== TABLE ========== */
     .table-wrap { overflow-x: auto; }
@@ -749,7 +766,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 4.0</div>
+<div class="ver-badge">ver 4.1</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -1256,6 +1273,7 @@
     if (g) g.classList.toggle('on', sel === 'geoguessr');
     const hint = document.getElementById('sm-hint');
     if (hint) hint.textContent = scoreModeHint(sel);
+    for (let i = 0; i < 3; i++) { if (geoMaps[i] && geoMaps[i]._redrawHeat) geoMaps[i]._redrawHeat(); }
   }
 
   // 編集フォーム：おなじ
@@ -1267,6 +1285,7 @@
     if (g) g.classList.toggle('on', sel === 'geoguessr');
     const hint = document.getElementById('edit-sm-hint');
     if (hint) hint.textContent = scoreModeHint(sel);
+    for (let i = 0; i < 3; i++) { if (editGeoMaps[i] && editGeoMaps[i]._redrawHeat) editGeoMaps[i]._redrawHeat(); }
   }
 
   // 新規フォームをひらくとき、配点せっていを はつき（ここどこ式・メール配点ON）にもどす
@@ -1292,6 +1311,101 @@
         empty.style.display = 'flex';
       }
     }
+  }
+
+  // ========== 点数ヒートマップ（ver4.1）==========
+  // 本番採点(Code.gs ver2.6 の scoreForPin)と完全に同じ式：
+  //   なめらか式(geoguessr): s = 5000 * exp(-3 * dScore / 半径m)。円カットなし・フロアなし。
+  //   ここどこ式(kokodoko):  中心からのきょり>半径 → 0点。Dmax = (🎯と中心のきょり)+半径。
+  //                          s = 5000 * (1 - dScore / Dmax)。
+  const HEAT_PERFECT = 5000, HEAT_K = 3, HEAT_OPACITY = 0.5;
+  function heatHaversineKm(aLat, aLng, bLat, bLng) {
+    const R = 6371, tr = d => d * Math.PI / 180;
+    const dLat = tr(bLat - aLat), dLng = tr(bLng - aLng);
+    const a = Math.sin(dLat/2)**2 + Math.cos(tr(aLat))*Math.cos(tr(bLat))*Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+  function heatColor(t) {
+    t = Math.max(0, Math.min(1, t));
+    const st = [[0,[224,67,42]],[0.25,[240,140,0]],[0.5,[245,205,0]],[0.75,[150,200,60]],[1,[29,158,117]]];
+    for (let i = 0; i < st.length - 1; i++) {
+      const [t0,c0] = st[i], [t1,c1] = st[i+1];
+      if (t >= t0 && t <= t1) {
+        const f = (t-t0)/(t1-t0);
+        return `rgb(${Math.round(c0[0]+(c1[0]-c0[0])*f)},${Math.round(c0[1]+(c1[1]-c0[1])*f)},${Math.round(c0[2]+(c1[2]-c0[2])*f)})`;
+      }
+    }
+    return 'rgb(29,158,117)';
+  }
+  // マスク用：中心まわりの円のフチを点でつくる（おおよそ・等距離近似）
+  function heatRing(lat, lng, radiusKm, n) {
+    const pts = [], cosL = Math.cos(lat * Math.PI / 180) || 1e-6;
+    for (let k = 0; k <= n; k++) {
+      const ang = 2 * Math.PI * k / n;
+      pts.push([lat + (radiusKm/111.32)*Math.cos(ang), lng + (radiusKm/(111.32*cosL))*Math.sin(ang)]);
+    }
+    return pts;
+  }
+  // v = {lat,lng,radiusKm,scoreLat,scoreLng}, mode = 'geoguessr' | 'kokodoko'
+  function drawHeat(map, v, mode) {
+    const hs = map._heat; if (!hs) return;
+    hs.bands.clearLayers(); hs.mask.clearLayers();
+    const R = v.radiusKm;
+    const offset = heatHaversineKm(v.scoreLat, v.scoreLng, v.lat, v.lng);
+    const Dmax = offset + R;
+    const lo = (mode === 'geoguessr') ? 50 : 0; // なめらかは無限に広がるので下端を50点で止める
+    const bands = [];
+    for (let i = 0; i <= 10; i++) {
+      const s = HEAT_PERFECT - (HEAT_PERFECT - lo) * i / 10;
+      let rKm;
+      if (mode === 'geoguessr') rKm = (s <= 0) ? Infinity : R * Math.log(HEAT_PERFECT / s) / HEAT_K;
+      else rKm = Dmax * (1 - s / HEAT_PERFECT);
+      if (isFinite(rKm) && rKm > 0) bands.push({ s, rKm });
+    }
+    bands.sort((a, b) => b.rKm - a.rKm); // 大きい円(低得点)→小さい円(高得点)
+    bands.forEach(b => {
+      L.circle([v.scoreLat, v.scoreLng], {
+        pane: 'heatbands', radius: b.rKm * 1000, stroke: false,
+        fillColor: heatColor(b.s / HEAT_PERFECT), fillOpacity: 1, interactive: false
+      }).addTo(hs.bands);
+    });
+    if (mode !== 'geoguessr') { // ここどこ式は円の外を0点としてマスク
+      const ring = heatRing(v.lat, v.lng, R, 128);
+      const world = [[85,-180],[85,180],[-85,180],[-85,-180]];
+      L.polygon([world, ring], { pane: 'heatmask', stroke: false, fillColor: '#f7f6f2', fillOpacity: 0.78, interactive: false }).addTo(hs.mask);
+    }
+    map.getPane('heatbands').style.opacity = HEAT_OPACITY;
+    if (hs.legendEl) {
+      const label = (mode === 'geoguessr') ? 'なめらか式' : 'ここどこ式（円の外は0点）';
+      hs.legendEl.innerHTML = `<div class="lt">${label}</div><div class="bar"></div><div class="ticks"><span>0</span><span>2500</span><span>5000点</span></div>`;
+    }
+  }
+  // 地図にヒートマップ機能（トグルボタン・凡例・レイヤー）をくっつける
+  function attachHeat(map, getVals, getMode) {
+    map.createPane('heatbands'); map.getPane('heatbands').style.zIndex = 350; map.getPane('heatbands').style.opacity = HEAT_OPACITY;
+    map.createPane('heatmask');  map.getPane('heatmask').style.zIndex = 370;
+    const hs = { on: false, bands: L.layerGroup().addTo(map), mask: L.layerGroup().addTo(map), legend: null, legendEl: null };
+    map._heat = hs;
+    map._redrawHeat = function () { if (hs.on) { const v = getVals(); if (v) drawHeat(map, v, getMode()); } };
+    // トグルボタン（右上）
+    const Btn = L.Control.extend({ options: { position: 'topright' }, onAdd: function () {
+      const b = L.DomUtil.create('button', 'heat-toggle-btn');
+      b.type = 'button'; b.innerHTML = '🗺️ 点数ゾーン';
+      L.DomEvent.disableClickPropagation(b);
+      L.DomEvent.on(b, 'click', function () {
+        hs.on = !hs.on; b.classList.toggle('on', hs.on);
+        if (hs.on) { map._redrawHeat(); if (hs.legend) hs.legend.getContainer().style.display = 'block'; }
+        else { hs.bands.clearLayers(); hs.mask.clearLayers(); if (hs.legend) hs.legend.getContainer().style.display = 'none'; }
+      });
+      return b;
+    }});
+    map.addControl(new Btn());
+    // 凡例（右下・最初はかくす）
+    const Leg = L.Control.extend({ options: { position: 'bottomright' }, onAdd: function () {
+      const d = L.DomUtil.create('div', 'heat-legend'); d.style.display = 'none'; hs.legendEl = d; return d;
+    }});
+    hs.legend = new Leg(); map.addControl(hs.legend);
+    return hs;
   }
 
   function buildGeoMap(i) {
@@ -1326,6 +1440,7 @@
       const c = clampToCircle(geoVals[i].lat, geoVals[i].lng, geoVals[i].radiusKm, lat, lng);
       geoVals[i].scoreLat = c[0]; geoVals[i].scoreLng = c[1];
       scoreMarker.setLatLng(c);
+      if (map._heat && map._heat.on) map._redrawHeat();
     }
     function setCenter(lat, lng) {
       geoVals[i].lat = lat; geoVals[i].lng = lng;
@@ -1342,6 +1457,7 @@
     geoMaps[i]._circle = circle;       // 半径スライダーからつかう
     geoMaps[i]._setScore = setScore;   // フチ止め・もどすボタンからつかう
     geoMaps[i]._setCenter = setCenter; // 「◎を地図の中央におく」ボタンからつかう
+    attachHeat(map, () => geoVals[i], () => (document.querySelector('input[name="score-mode"]:checked') || {}).value || 'kokodoko');
   }
 
   function onRadiusChange(i) {
@@ -1421,6 +1537,7 @@
       const c = clampToCircle(editGeoVals[i].lat, editGeoVals[i].lng, editGeoVals[i].radiusKm, lat, lng);
       editGeoVals[i].scoreLat = c[0]; editGeoVals[i].scoreLng = c[1];
       scoreMarker.setLatLng(c);
+      if (map._heat && map._heat.on) map._redrawHeat();
     }
     function setCenter(lat, lng) {
       editGeoVals[i].lat = lat; editGeoVals[i].lng = lng;
@@ -1437,6 +1554,7 @@
     editGeoMaps[i]._circle = circle;
     editGeoMaps[i]._setScore = setScore;
     editGeoMaps[i]._setCenter = setCenter;
+    attachHeat(map, () => editGeoVals[i], () => (document.querySelector('input[name="edit-score-mode"]:checked') || {}).value || 'kokodoko');
 
     // スライダー・数字ボックスを よみこんだ半径に あわせる
     const slider = document.getElementById('edit-geo-radius-' + i);
