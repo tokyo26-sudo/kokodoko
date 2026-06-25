@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 3.5 -->
+  <!-- ver 3.6 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -451,6 +451,27 @@
             写真ごとに <b>正解はんいの丸（◎中心＋半径）</b> と <b>正解の中心点（🎯・最高得点の地点）</b> をきめてネ。
             ◎と🎯はドラッグ、半径はスライダーでグリグリうごかせるヨ。🎯は円の外には出ないヨ（フチで止まる）。
           </div>
+
+          <!-- 配点のせってい（フェーズD） -->
+          <div class="geo-set" id="map-score-settings" style="background:#fafaf7">
+            <div class="geo-set-title">⚙️ 配点のせってい</div>
+            <div style="font-size:12px;color:#555;margin-bottom:6px">配点ほうしき</div>
+            <div class="mode-opts" style="margin-bottom:8px">
+              <label class="mode-opt on" id="sm-opt-kokodoko">
+                <input type="radio" id="score-mode-kokodoko" name="score-mode" value="kokodoko" checked onchange="onScoreModeChange()"> ここどこ式
+              </label>
+              <label class="mode-opt" id="sm-opt-geoguessr">
+                <input type="radio" id="score-mode-geoguessr" name="score-mode" value="geoguessr" onchange="onScoreModeChange()"> ジオゲッサー式
+              </label>
+            </div>
+            <div class="geo-hint" id="sm-hint" style="margin:0 0 12px"></div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;font-weight:600;color:#444">
+              <input type="checkbox" id="email-score-chk" checked style="accent-color:#1D9E75;width:16px;height:16px;cursor:pointer">
+              確認メールに配点（スコア）をふくめる
+            </label>
+            <div class="geo-hint" style="margin-top:5px">ONにすると、プレイヤーの確認メールに3問それぞれのスコアと合計が入るヨ。OFFなら今までどおりスコアなし。</div>
+          </div>
+
           <div class="geo-set" id="map-set-0">
             <div class="geo-set-title">📷 写真 1 のせってい</div>
             <div class="geo-thumb-empty" id="geo-thumb-empty-0">えらぶと<br>出るヨ</div>
@@ -544,6 +565,27 @@
           </div>
           <!-- マップ部屋のときの 地図エディタ -->
           <div id="edit-map-settings" style="display:none;margin-top:1rem">
+
+            <!-- 配点のせってい（編集・フェーズD） -->
+            <div class="geo-set" id="edit-map-score-settings" style="background:#fafaf7">
+              <div class="geo-set-title">⚙️ 配点のせってい</div>
+              <div style="font-size:12px;color:#555;margin-bottom:6px">配点ほうしき</div>
+              <div class="mode-opts" style="margin-bottom:8px">
+                <label class="mode-opt on" id="edit-sm-opt-kokodoko">
+                  <input type="radio" id="edit-score-mode-kokodoko" name="edit-score-mode" value="kokodoko" checked onchange="onEditScoreModeChange()"> ここどこ式
+                </label>
+                <label class="mode-opt" id="edit-sm-opt-geoguessr">
+                  <input type="radio" id="edit-score-mode-geoguessr" name="edit-score-mode" value="geoguessr" onchange="onEditScoreModeChange()"> ジオゲッサー式
+                </label>
+              </div>
+              <div class="geo-hint" id="edit-sm-hint" style="margin:0 0 12px"></div>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;font-weight:600;color:#444">
+                <input type="checkbox" id="edit-email-score-chk" style="accent-color:#1D9E75;width:16px;height:16px;cursor:pointer">
+                確認メールに配点（スコア）をふくめる
+              </label>
+              <div class="geo-hint" style="margin-top:5px">ONにすると、プレイヤーの確認メールに3問それぞれのスコアと合計が入るヨ。OFFなら今までどおりスコアなし。</div>
+            </div>
+
             <div class="geo-set" id="edit-map-set-0">
               <div class="geo-set-title">📷 写真 1 のせってい</div>
               <img class="geo-thumb" id="edit-geo-thumb-0" style="display:none" alt="写真1">
@@ -686,7 +728,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 3.5</div>
+<div class="ver-badge">ver 3.6</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -810,6 +852,13 @@
           if (qGrid) qGrid.style.display = 'none';
           if (qNotice) qNotice.style.display = 'block';
           if (mapBox) mapBox.style.display = 'block';
+          // 配点せっていを よみこむ
+          const sm = (data.scoreMode === 'geoguessr') ? 'geoguessr' : 'kokodoko';
+          const smRadio = document.getElementById('edit-score-mode-' + sm);
+          if (smRadio) smRadio.checked = true;
+          const esChk = document.getElementById('edit-email-score-chk');
+          if (esChk) esChk.checked = !!data.emailScore;
+          onEditScoreModeChange();
           const geo = data.geoData || [];
           for (let i = 0; i < 3; i++) {
             const g = geo[i] || {};
@@ -1007,6 +1056,11 @@
       answerMode: editAnswerMode
     };
     if (geo !== undefined) body.geo = geo;
+    // 配点せってい（マップ部屋のときだけ おくる）
+    if (editAnswerMode === 'map') {
+      body.scoreMode = (document.querySelector('input[name="edit-score-mode"]:checked') || {}).value || 'kokodoko';
+      body.emailScore = !!document.getElementById('edit-email-score-chk').checked;
+    }
 
     fetch(APPS_SCRIPT_URL, {
       method: 'POST',
@@ -1057,6 +1111,7 @@
     document.getElementById('new-room-form').style.display = 'block';
     generateRoomCode();
     setupSlotDragDrop();
+    resetScoreSettings();
     window.scrollTo(0, document.getElementById('new-room-form').offsetTop - 20);
   }
 
@@ -1100,6 +1155,7 @@
     if (qNotice) qNotice.style.display = (sel === 'map') ? 'block' : 'none';
     if (sel === 'map') {
       box.style.display = 'block';
+      onScoreModeChange();
       for (let i = 0; i < 3; i++) buildGeoMap(i);
       syncGeoThumbs();
       // Leafletはひょうじされてないとサイズ0になるので、ひょうじごにサイズなおす
@@ -1109,6 +1165,44 @@
     } else {
       box.style.display = 'none';
     }
+  }
+
+  // ========== 配点ほうしき（フェーズD） ==========
+  // ヒント文（ここどこ式 / ジオゲッサー式）をかえす
+  function scoreModeHint(mode) {
+    if (mode === 'geoguessr') {
+      return '円カットなし。半径を「マップの大きさ」にして、🎯（正解の点）からなめらかに減点。半径が小さいほどシビア、大きいほどやさしいヨ。';
+    }
+    return '円の中だけ点。円の外は0点。🎯（最高得点の地点）から遠いほど点がへるヨ。';
+  }
+
+  // 新規フォーム：配点ボタンのみため＆ヒントをきりかえる
+  function onScoreModeChange() {
+    const sel = (document.querySelector('input[name="score-mode"]:checked') || {}).value || 'kokodoko';
+    const k = document.getElementById('sm-opt-kokodoko');
+    const g = document.getElementById('sm-opt-geoguessr');
+    if (k) k.classList.toggle('on', sel === 'kokodoko');
+    if (g) g.classList.toggle('on', sel === 'geoguessr');
+    const hint = document.getElementById('sm-hint');
+    if (hint) hint.textContent = scoreModeHint(sel);
+  }
+
+  // 編集フォーム：おなじ
+  function onEditScoreModeChange() {
+    const sel = (document.querySelector('input[name="edit-score-mode"]:checked') || {}).value || 'kokodoko';
+    const k = document.getElementById('edit-sm-opt-kokodoko');
+    const g = document.getElementById('edit-sm-opt-geoguessr');
+    if (k) k.classList.toggle('on', sel === 'kokodoko');
+    if (g) g.classList.toggle('on', sel === 'geoguessr');
+    const hint = document.getElementById('edit-sm-hint');
+    if (hint) hint.textContent = scoreModeHint(sel);
+  }
+
+  // 新規フォームをひらくとき、配点せっていを はつき（ここどこ式・メール配点ON）にもどす
+  function resetScoreSettings() {
+    const r = document.getElementById('score-mode-kokodoko'); if (r) r.checked = true;
+    const c = document.getElementById('email-score-chk');     if (c) c.checked = true;
+    onScoreModeChange();
   }
 
   // えらんだ写真のサムネを 各ちずカードに うつす（写真と地図をペアで見せる）
@@ -1525,6 +1619,14 @@
         }))
       : null;
 
+    // 配点せってい（マップのときだけ いみがある）
+    const scoreMode = (answerMode === 'map')
+      ? ((document.querySelector('input[name="score-mode"]:checked') || {}).value || 'kokodoko')
+      : 'kokodoko';
+    const emailScore = (answerMode === 'map')
+      ? !!document.getElementById('email-score-chk').checked
+      : false;
+
     fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({
@@ -1535,7 +1637,9 @@
         originals: slotFiles.map(f => f ? f.original : null),
         questions,
         answerMode: answerMode,
-        geo: geo
+        geo: geo,
+        scoreMode: scoreMode,
+        emailScore: emailScore
       })
     })
       .then(r => r.json())
