@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 3.8 -->
+  <!-- ver 3.9 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -468,7 +468,7 @@
                 <input type="radio" id="score-mode-kokodoko" name="score-mode" value="kokodoko" checked onchange="onScoreModeChange()"> ここどこ式
               </label>
               <label class="mode-opt" id="sm-opt-geoguessr">
-                <input type="radio" id="score-mode-geoguessr" name="score-mode" value="geoguessr" onchange="onScoreModeChange()"> ジオゲッサー式
+                <input type="radio" id="score-mode-geoguessr" name="score-mode" value="geoguessr" onchange="onScoreModeChange()"> なめらか式
               </label>
             </div>
             <div class="geo-hint" id="sm-hint" style="margin:0 0 12px"></div>
@@ -585,7 +585,7 @@
                   <input type="radio" id="edit-score-mode-kokodoko" name="edit-score-mode" value="kokodoko" checked onchange="onEditScoreModeChange()"> ここどこ式
                 </label>
                 <label class="mode-opt" id="edit-sm-opt-geoguessr">
-                  <input type="radio" id="edit-score-mode-geoguessr" name="edit-score-mode" value="geoguessr" onchange="onEditScoreModeChange()"> ジオゲッサー式
+                  <input type="radio" id="edit-score-mode-geoguessr" name="edit-score-mode" value="geoguessr" onchange="onEditScoreModeChange()"> なめらか式
                 </label>
               </div>
               <div class="geo-hint" id="edit-sm-hint" style="margin:0 0 12px"></div>
@@ -741,7 +741,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 3.8</div>
+<div class="ver-badge">ver 3.9</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -1217,7 +1217,7 @@
   }
 
   // ========== 配点ほうしき（フェーズD） ==========
-  // ヒント文（ここどこ式 / ジオゲッサー式）をかえす
+  // ヒント文（ここどこ式 / なめらか式）をかえす
   function scoreModeHint(mode) {
     if (mode === 'geoguessr') {
       return '円カットなし。半径を「マップの大きさ」にして、🎯（正解の点）からなめらかに減点。半径が小さいほどシビア、大きいほどやさしいヨ。';
