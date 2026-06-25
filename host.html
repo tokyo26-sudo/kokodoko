@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 3.7 -->
+  <!-- ver 3.8 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -319,11 +319,13 @@
     .geo-row { display:flex; align-items:center; gap:10px; font-size:12px; color:#666; }
     .geo-row input[type=range] { flex:1; accent-color:#1D9E75; }
     .geo-radius-val { font-weight:700; color:#1D9E75; min-width:64px; text-align:right; }
-    .geo-radius-num {
-      width:74px; padding:5px 6px; border:1.5px solid #e3e2dd; border-radius:8px;
-      font-size:12px; font-weight:700; color:#1D9E75; text-align:right; background:#fff;
+    .geo-row .geo-radius-num {
+      width:66px; flex:0 0 auto; padding:6px 6px; margin:0;
+      border:1.5px solid #e3e2dd; border-radius:8px;
+      font-size:13px; font-weight:700; color:#1D9E75; text-align:right; background:#fff;
     }
-    .geo-radius-num:focus { outline:none; border-color:#1D9E75; }
+    .geo-row .geo-radius-num:focus { outline:none; border-color:#1D9E75; box-shadow:none; }
+    .geo-row input[type=range] { min-width:0; }
     .geo-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .geo-reset-btn {
       font-size:12px; font-weight:600;
@@ -739,7 +741,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 3.7</div>
+<div class="ver-badge">ver 3.8</div>
 
 <script>
   // ========== Apps Script URL ==========
