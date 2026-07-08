@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？ ホスト管理</title>
-  <!-- ver 4.1 -->
+  <!-- ver 4.2 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -697,6 +697,7 @@
             </button>
           </div>
           <button class="btn-sm ghost-sm" onclick="loadAnswers()">再読み込み</button>
+          <button class="btn-sm ghost-sm" onclick="downloadRoomCsv()" title="今えらんでいる部屋の回答をCSVでDL">⬇️ CSVでDL</button>
         </div>
       </div>
     </div>
@@ -766,7 +767,7 @@
   <img id="lightbox-img" src="" alt="げんすんだい">
 </div>
 
-<div class="ver-badge">ver 4.1</div>
+<div class="ver-badge">ver 4.2</div>
 
 <script>
   // ========== Apps Script URL ==========
@@ -1989,6 +1990,10 @@
           <div style="font-size:13px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap">${esc(r.otayori)}</div>
         </div>` : ''}
         ${judgeBlock}
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn-sm ghost-sm" onclick="replayRoom('${r.roomId}')">🔧 テスト再プレイ</button>
+          <button class="btn-sm" style="background:#fdecec;color:#c0392b;border:1px solid #f3c6c6" onclick="deleteAnswerRow(${r.rowIndex})">🗑️ この回答を消す</button>
+        </div>
       </div>`;
     }).join('');
   }
@@ -2039,6 +2044,10 @@
         </td>
         <td>
           ${judgeCell}
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn-sm ghost-sm" style="padding:3px 7px;font-size:11px" onclick="replayRoom('${r.roomId}')">🔧再プレイ</button>
+            <button class="btn-sm" style="padding:3px 7px;font-size:11px;background:#fdecec;color:#c0392b;border:1px solid #f3c6c6" onclick="deleteAnswerRow(${r.rowIndex})">🗑️消す</button>
+          </div>
         </td>
       </tr>`;
     }).join('');
@@ -2051,6 +2060,52 @@
     })
       .then(r => r.json())
       .catch(() => {});
+  }
+
+  // 開発用：その部屋を ?replay=1 つきで新タブでひらく（もう一回プレイできる）
+  function replayRoom(roomId) {
+    const base = location.href.replace(/[^/]*(\?.*)?$/, '');
+    window.open(base + 'index.html?id=' + encodeURIComponent(roomId) + '&replay=1', '_blank');
+  }
+
+  // 回答を1行けす（テストのゴミ行そうじ）
+  function deleteAnswerRow(rowIndex) {
+    if (!confirm('この回答を1行けします。もとにもどせないヨ。いい？')) return;
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteAnswer', password: HOST_PASSWORD, rowIndex })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.ok) { loadAnswers(); }          // 消したら行番号がズレるので読みなおし
+        else { alert((d && d.error) || 'けせなかったヨ'); }
+      })
+      .catch(() => alert('つうしんエラーだったヨ'));
+  }
+
+  // いま えらんでいる部屋の回答を CSV でダウンロード（BOM付きUTF-8＝エクセルで日本語OK）
+  function downloadRoomCsv() {
+    const filterRoom = document.getElementById('filter-room').value.trim();
+    const rows = filterRoom ? answersData.filter(r => String(r.roomId) === filterRoom) : answersData.slice();
+    if (!rows.length) { alert('回答データがないヨ'); return; }
+    const isMap = rows.some(r => r.answerMode === 'map');
+    const header = ['ROOM','ハンドル名','回答1','回答2','回答3','タイム','提出日時','おたより','メール','判定1','判定2','判定3'];
+    if (isMap) header.push('スコア1','スコア2','スコア3','合計スコア');
+    const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const lines = [header.map(q).join(',')];
+    sortRows(rows).forEach(r => {
+      const row = [r.roomId, r.handle, r.ans1, r.ans2, r.ans3, fmtElapsed(r.elapsed), fmtDateJP(r.submittedAt), r.otayori, r.email, r.judge1, r.judge2, r.judge3];
+      if (isMap) row.push(r.score1, r.score2, r.score3, r.scoreTotal);
+      lines.push(row.map(q).join(','));
+    });
+    const csv = '\uFEFF' + lines.join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filterRoom ? ('kokodoko_' + filterRoom + '_回答.csv') : 'kokodoko_全回答.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // ========== 投こう審査 ==========

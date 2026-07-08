@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ここどこ？</title>
-  <!-- ver 2.6 -->
+  <!-- ver 2.7 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <style>
@@ -431,7 +431,7 @@
   </div>
 </div>
 
-<div class="ver-badge">ver 2.6</div>
+<div class="ver-badge">ver 2.7</div>
 
 <script>
   // ======================== Apps Script URL ========================
@@ -466,6 +466,22 @@
   window.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(location.search);
     const idParam = params.get('id');
+    const replayParam = params.get('replay');
+
+    // 開発用：?id=XXXX&replay=1 なら、このへやのロック・ほぞんだけ消して最初から。
+    // ほかのへや・ほかのアプリの記憶にはさわらないヨ。
+    if (idParam && replayParam === '1') {
+      localStorage.removeItem(getStateKey(idParam));
+      localStorage.removeItem('kokodoko_pins_' + idParam);
+      localStorage.removeItem('kokodoko_ans_' + idParam);
+      state = {
+        roomId: idParam, handle: null, startTime: null,
+        images: [null,null,null], originals: [null,null,null],
+        questions: null, submitted: false, elapsedAtSubmit: null
+      };
+      showHandleScreen();
+      return;
+    }
 
     if (idParam) {
       // URLにroomIdあり → そのへやのstateをよむ
